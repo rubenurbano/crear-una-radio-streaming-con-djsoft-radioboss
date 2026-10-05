@@ -1,0 +1,3789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radio Streaming con DJSoft / RadioBOSS — Tutorial interactivo</title>
+<style>
+/* ============================================================
+   VARIABLES Y BASE
+   ============================================================ */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+:root{
+  --bg:#0a0e1a;
+  --card:#0f172a;
+  --card2:#0b1220;
+  --accent:#1e3a5f;
+  --accent-soft:#16283f;
+  --accent2:#38bdf8;
+  --accent3:#818cf8;
+  --text:#e2e8f0;
+  --muted:#94a3b8;
+  --border:#1e293b;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --bad:#f87171;
+  --radius:14px;
+  --shadow:0 6px 24px rgba(0,0,0,.35);
+}
+body.light{
+  --bg:#eef2f9;
+  --card:#ffffff;
+  --card2:#f7f9fd;
+  --accent:#dbe6f5;
+  --accent-soft:#e8eefb;
+  --accent2:#0369a1;
+  --accent3:#4338ca;
+  --text:#0f172a;
+  --muted:#475569;
+  --border:#cbd5e1;
+  --ok:#047857;
+  --warn:#b45309;
+  --bad:#b91c1c;
+  --shadow:0 6px 20px rgba(15,23,42,.10);
+}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:16px;
+  line-height:1.65;
+  -webkit-text-size-adjust:100%;
+}
+img{max-width:100%}
+a{color:var(--accent2);text-decoration:none;border-bottom:1px dotted currentColor;word-break:break-word}
+a:hover{border-bottom-style:solid}
+
+/* ============================================================
+   BARRA SUPERIOR
+   ============================================================ */
+.toolbar{
+  position:sticky;top:0;z-index:60;
+  background:color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+@supports not (backdrop-filter: blur(2px)){
+  .toolbar{background:var(--card)}
+}
+.tb-inner{
+  max-width:1120px;margin:0 auto;padding:8px 12px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.brand{
+  font-weight:800;font-size:.92rem;letter-spacing:.3px;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+  color:var(--text);
+}
+.brand span{color:var(--accent2)}
+.tb-tools{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-left:auto;
+}
+.tb-btn{
+  background:var(--card2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:6px 10px;
+  font-size:.82rem;
+  font-weight:700;
+  cursor:pointer;
+  font-family:inherit;
+  line-height:1.2;
+  transition:.18s;
+}
+.tb-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.tb-btn:active{transform:scale(.96)}
+.search-wrap{position:relative;display:flex;align-items:center}
+#searchInput{
+  background:var(--card2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:6px 10px;
+  font-size:.82rem;
+  font-family:inherit;
+  width:190px;
+  max-width:52vw;
+  outline:none;
+}
+#searchInput:focus{border-color:var(--accent2)}
+#searchInput::placeholder{color:var(--muted)}
+.search-count{
+  font-size:.72rem;color:var(--muted);
+  margin-left:6px;white-space:nowrap;
+}
+.progress-bar{height:3px;background:transparent;width:100%}
+#progressFill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--accent2),var(--accent3));
+  transition:width .12s linear;
+}
+
+/* ============================================================
+   PESTAÑAS
+   ============================================================ */
+.tabs{
+  position:sticky;top:47px;z-index:55;
+  background:color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+@supports not (backdrop-filter: blur(2px)){
+  .tabs{background:var(--bg)}
+}
+.tabs-inner{
+  max-width:1120px;margin:0 auto;padding:8px 10px;
+  display:flex;gap:6px;overflow-x:auto;
+  scrollbar-width:thin;
+  -webkit-overflow-scrolling:touch;
+}
+.tabs-inner::-webkit-scrollbar{height:5px}
+.tabs-inner::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
+.tab{
+  flex:0 0 auto;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--muted);
+  border-radius:999px;
+  padding:6px 14px;
+  font-size:.78rem;
+  font-weight:800;
+  letter-spacing:.6px;
+  cursor:pointer;
+  font-family:inherit;
+  transition:.18s;
+  white-space:nowrap;
+}
+.tab:hover{color:var(--text);border-color:var(--accent2)}
+.tab.active{
+  background:var(--accent);
+  border-color:var(--accent2);
+  color:#fff;
+  box-shadow:0 0 0 1px var(--accent2) inset;
+}
+body.light .tab.active{color:#fff;background:var(--accent2)}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+main{
+  max-width:1120px;
+  margin:0 auto;
+  padding:16px 14px 90px;
+}
+.panel{display:none}
+.panel.active{display:block;animation:fadeUp .35s ease both}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:none}
+}
+
+h1{
+  font-size:1.75rem;line-height:1.2;margin:.4em 0 .3em;
+  letter-spacing:-.5px;
+}
+h2{
+  font-size:1.22rem;margin:1.9em 0 .6em;
+  padding-left:12px;
+  border-left:4px solid var(--accent2);
+  line-height:1.3;
+}
+h3{font-size:1.02rem;margin:1.4em 0 .4em;color:var(--accent2)}
+h4{font-size:.94rem;margin:1.1em 0 .3em;color:var(--text)}
+p{margin:.65em 0}
+ul,ol{margin:.6em 0;padding-left:1.35em}
+li{margin:.3em 0}
+.lead{font-size:1.02rem;color:var(--muted)}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 16px 14px;
+  margin:14px 0;
+  box-shadow:var(--shadow);
+}
+.card.tight{padding:12px 14px}
+.card h3:first-child,.card h2:first-child,.card h4:first-child{margin-top:0}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin:14px 0;
+}
+@media(min-width:720px){
+  .grid.two{grid-template-columns:1fr 1fr}
+  .grid.three{grid-template-columns:repeat(3,1fr)}
+}
+
+.box{
+  border-radius:12px;
+  padding:12px 14px;
+  margin:12px 0;
+  border:1px solid var(--border);
+  background:var(--card2);
+  font-size:.93rem;
+}
+.box .box-title{
+  font-weight:800;font-size:.8rem;letter-spacing:.7px;
+  text-transform:uppercase;margin-bottom:6px;display:block;
+}
+.box.obj{border-left:4px solid var(--accent2)}
+.box.obj .box-title{color:var(--accent2)}
+.box.res{border-left:4px solid var(--ok)}
+.box.res .box-title{color:var(--ok)}
+.box.warn{border-left:4px solid var(--warn)}
+.box.warn .box-title{color:var(--warn)}
+.box.bad{border-left:4px solid var(--bad)}
+.box.bad .box-title{color:var(--bad)}
+.box.tip{border-left:4px solid var(--accent3)}
+.box.tip .box-title{color:var(--accent3)}
+
+/* ============================================================
+   CÓDIGO
+   ============================================================ */
+.code-wrap{position:relative;margin:14px 0}
+pre{
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 14px;
+  overflow-x:auto;
+  font-size:.82rem;
+  line-height:1.55;
+  margin:0;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  color:var(--text);
+  -webkit-overflow-scrolling:touch;
+}
+pre code{font-family:inherit;white-space:pre}
+.copyBtn{
+  position:absolute;top:8px;right:8px;
+  background:var(--accent);
+  color:#fff;
+  border:1px solid var(--accent2);
+  border-radius:8px;
+  font-size:.68rem;
+  font-weight:800;
+  letter-spacing:.6px;
+  padding:4px 9px;
+  cursor:pointer;
+  font-family:inherit;
+  opacity:.85;
+  transition:.18s;
+  z-index:2;
+}
+.copyBtn:hover{opacity:1;background:var(--accent2)}
+.copyBtn.done{background:var(--ok);border-color:var(--ok)}
+code.inline{
+  background:var(--accent-soft);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:1px 6px;
+  font-size:.85em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color:var(--accent2);
+  word-break:break-word;
+}
+
+/* ============================================================
+   TABLAS
+   ============================================================ */
+.table-wrap{overflow-x:auto;margin:14px 0;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--border)}
+table{border-collapse:collapse;width:100%;font-size:.85rem;min-width:420px;background:var(--card)}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+th{
+  background:var(--accent);
+  color:var(--text);
+  font-weight:800;
+  font-size:.78rem;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  position:sticky;top:0;
+}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even) td{background:var(--card2)}
+td.c,th.c{text-align:center}
+
+/* ============================================================
+   PASOS
+   ============================================================ */
+.step{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px 14px;
+  margin:10px 0;
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+}
+.step-num{
+  flex:0 0 auto;
+  width:30px;height:30px;
+  border-radius:50%;
+  background:var(--accent);
+  border:1px solid var(--accent2);
+  color:#fff;
+  font-weight:800;
+  font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;
+  margin-top:2px;
+}
+body.light .step-num{background:var(--accent2)}
+.step-body{flex:1;min-width:0}
+.step-body strong.act{color:var(--accent2)}
+.step-body .why{
+  display:block;
+  font-size:.84rem;
+  color:var(--muted);
+  margin-top:3px;
+  font-style:italic;
+}
+
+details{
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 14px;
+  margin:10px 0;
+}
+details[open]{padding-bottom:14px}
+summary{
+  cursor:pointer;
+  font-weight:700;
+  color:var(--accent2);
+  font-size:.92rem;
+  list-style:none;
+  outline:none;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ ";display:inline-block;transition:.2s}
+details[open] summary::before{transform:rotate(90deg)}
+
+/* ============================================================
+   CHECKLIST
+   ============================================================ */
+.chk-list{list-style:none;padding:0;margin:10px 0}
+.chk-list li{margin:0}
+.chk{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:9px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:7px;
+  background:var(--card2);
+  cursor:pointer;
+  font-size:.9rem;
+  transition:.15s;
+}
+.chk:hover{border-color:var(--accent2)}
+.chk input{
+  width:18px;height:18px;
+  margin:2px 0 0;
+  accent-color:var(--accent2);
+  flex:0 0 auto;
+  cursor:pointer;
+}
+.chk input:checked + span{color:var(--muted);text-decoration:line-through}
+.chk-progress{
+  font-size:.82rem;color:var(--muted);margin:8px 0 4px;font-weight:700;
+}
+
+/* ============================================================
+   HERO SVG
+   ============================================================ */
+.hero-svg-mount{
+  width:100%;
+  margin:6px 0 18px;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  background:#0a0e1a;
+  line-height:0;
+}
+.hero-svg-mount svg{display:block;width:100%;height:auto}
+.hero-svg-mount img{display:block;width:100%;height:auto}
+.hero-caption{
+  font-size:.8rem;
+  color:var(--muted);
+  margin:-10px 0 18px;
+  text-align:center;
+}
+
+/* ============================================================
+   BOTÓN VOLVER ARRIBA
+   ============================================================ */
+.to-top{
+  position:fixed;
+  right:16px;bottom:18px;
+  width:46px;height:46px;
+  border-radius:50%;
+  background:var(--accent);
+  color:#fff;
+  border:1px solid var(--accent2);
+  font-size:1.15rem;
+  font-weight:800;
+  cursor:pointer;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:70;
+  box-shadow:var(--shadow);
+  font-family:inherit;
+}
+.to-top.show{display:flex}
+.to-top:active{transform:scale(.94)}
+
+/* ============================================================
+   AVISO
+   ============================================================ */
+.notice{
+  position:fixed;
+  left:50%;bottom:20px;
+  transform:translateX(-50%);
+  background:var(--warn);
+  color:#1a1204;
+  padding:11px 16px;
+  border-radius:12px;
+  font-size:.85rem;
+  font-weight:700;
+  max-width:92vw;
+  z-index:200;
+  box-shadow:0 8px 26px rgba(0,0,0,.4);
+  display:none;
+}
+.notice.show{display:block}
+
+/* ============================================================
+   CRÉDITOS
+   ============================================================ */
+.author-card{
+  text-align:center;
+  background:linear-gradient(160deg,var(--card2),var(--card));
+  border:1px solid var(--accent);
+  border-radius:18px;
+  padding:26px 18px;
+  margin:16px 0;
+}
+.author-name{
+  font-size:2rem;
+  font-weight:900;
+  letter-spacing:-.5px;
+  margin:0 0 4px;
+  color:var(--accent2);
+  line-height:1.1;
+}
+.author-role{
+  font-size:.95rem;
+  color:var(--muted);
+  font-weight:700;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  margin:0;
+}
+.meta-line{
+  font-size:.86rem;
+  color:var(--muted);
+  margin:10px 0 0;
+}
+.meta-line strong{color:var(--text)}
+.version-badge{
+  display:inline-block;
+  background:var(--accent);
+  color:#fff;
+  border:1px solid var(--accent2);
+  border-radius:999px;
+  padding:3px 12px;
+  font-size:.75rem;
+  font-weight:800;
+  letter-spacing:.8px;
+  margin-top:10px;
+}
+
+/* ============================================================
+   VARIOS
+   ============================================================ */
+mark.search-hl{background:#facc15;color:#111;border-radius:3px;padding:0 2px}
+.kbd{
+  display:inline-block;
+  background:var(--accent-soft);
+  border:1px solid var(--border);
+  border-bottom-width:2px;
+  border-radius:6px;
+  padding:0 6px;
+  font-size:.82em;
+  font-family:ui-monospace,monospace;
+}
+.diagram{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.78rem;
+  line-height:1.5;
+  white-space:pre;
+  overflow-x:auto;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  margin:14px 0;
+  color:var(--text);
+  -webkit-overflow-scrolling:touch;
+}
+.pill{
+  display:inline-block;
+  background:var(--accent-soft);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:2px 10px;
+  font-size:.74rem;
+  font-weight:800;
+  letter-spacing:.5px;
+  color:var(--accent2);
+  margin:0 4px 4px 0;
+}
+hr{border:none;border-top:1px solid var(--border);margin:26px 0}
+.center{text-align:center}
+.small{font-size:.85rem;color:var(--muted)}
+
+/* ============================================================
+   IMPRESIÓN / PDF
+   ============================================================ */
+@media print{
+  @page{size:A4 portrait;margin:14mm 12mm}
+
+  html,body{
+    background:#fff !important;
+    color:#000 !important;
+    padding:0 !important;
+    margin:0 !important;
+    font-size:11pt !important;
+    line-height:1.45 !important;
+  }
+
+  .toolbar,.tabs,.to-top,.copyBtn,.progress-bar,nav,.search-hl,.notice{
+    display:none !important;
+  }
+
+  main{max-width:none !important;padding:0 !important;margin:0 !important}
+
+  .panel{
+    display:block !important;
+    page-break-after:auto !important;
+    animation:none !important;
+  }
+
+  pre,table,.table-wrap,.diagram{
+    overflow:visible !important;
+    white-space:pre-wrap !important;
+    word-break:break-word !important;
+    page-break-inside:avoid;
+  }
+  pre{background:#f4f4f6 !important;border:1px solid #bbb !important;color:#000 !important}
+  code.inline{background:#eee !important;color:#000 !important;border:1px solid #ccc !important}
+
+  .card,.box,.step,details,.chk,.author-card,.diagram{
+    background:#fff !important;
+    color:#000 !important;
+    border:1px solid #999 !important;
+    box-shadow:none !important;
+    page-break-inside:avoid;
+  }
+  .card,.box,.step,details,.chk{margin:8px 0 !important}
+
+  th{
+    background:#e5e7eb !important;
+    color:#000 !important;
+    border:1px solid #999 !important;
+  }
+  td{background:#fff !important;color:#000 !important;border:1px solid #ccc !important}
+  tbody tr:nth-child(even) td{background:#f5f5f5 !important}
+
+  h1,h2,h3,h4,.author-name,.step-num,.brand span{
+    color:#000 !important;
+    background:none !important;
+    -webkit-text-fill-color:#000 !important;
+  }
+  h2{border-left:4px solid #555 !important}
+  h3{color:#222 !important}
+
+  .step-num{
+    background:#e5e7eb !important;
+    border:1px solid #555 !important;
+    color:#000 !important;
+  }
+
+  a{color:#000 !important;border-bottom:none !important;text-decoration:underline}
+  mark.search-hl{background:transparent !important;color:#000 !important}
+
+  .hero-svg-mount{
+    border:1px solid #999 !important;
+    border-radius:8px !important;
+    background:#fff !important;
+    margin:6px 0 12px !important;
+    page-break-inside:avoid;
+  }
+  .hero-caption{color:#333 !important}
+
+  .version-badge{
+    background:#e5e7eb !important;
+    color:#000 !important;
+    border:1px solid #555 !important;
+  }
+
+  details{display:block !important}
+  details > summary{color:#000 !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SVG FUENTE OCULTO (única definición del dibujo)
+     ============================================================ -->
+<svg id="svgHeroSource" width="0" height="0" aria-hidden="true" focusable="false"
+     style="position:absolute;left:-9999px;top:0;overflow:hidden">
+  <defs>
+    <linearGradient id="gBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0a0e1a"/>
+    </linearGradient>
+    <linearGradient id="gAcc" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <filter id="fGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g id="svgHero">
+    <!-- Fondo -->
+    <rect x="0" y="0" width="820" height="260" rx="18" fill="url(#gBg)"/>
+    <rect x="0.5" y="0.5" width="819" height="259" rx="18" fill="none" stroke="#1e3a5f" stroke-width="1"/>
+
+    <!-- Título -->
+    <text x="410" y="30" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="12" font-weight="700" fill="#38bdf8" letter-spacing="3">RADIO STREAMING · ARQUITECTURA</text>
+
+    <!-- Conectores -->
+    <line x1="206" y1="131" x2="268" y2="131" stroke="#1e3a5f" stroke-width="2" stroke-dasharray="5 5"/>
+    <line x1="424" y1="131" x2="486" y2="131" stroke="#1e3a5f" stroke-width="2" stroke-dasharray="5 5"/>
+
+    <!-- Paquetes viajando -->
+    <circle r="4" fill="#38bdf8" filter="url(#fGlow)">
+      <animateMotion path="M206,131 L268,131" dur="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="4" fill="#38bdf8" filter="url(#fGlow)">
+      <animateMotion path="M206,131 L268,131" dur="1.5s" begin="0.75s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="1.5s" begin="0.75s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="4" fill="#818cf8" filter="url(#fGlow)">
+      <animateMotion path="M424,131 L486,131" dur="1.5s" begin="0.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="1.5s" begin="0.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="4" fill="#818cf8" filter="url(#fGlow)">
+      <animateMotion path="M424,131 L486,131" dur="1.5s" begin="0.95s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="1.5s" begin="0.95s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- ============ TARJETA 1 · RADIOBOSS ============ -->
+    <rect x="20" y="52" width="186" height="158" rx="12" fill="#0f172a" stroke="#1e3a5f" stroke-width="1.5"/>
+    <text x="113" y="78" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="13" font-weight="700" fill="#e2e8f0">RadioBOSS</text>
+
+    <g fill="url(#gAcc)">
+      <rect x="67" y="150" width="12" height="26" rx="3">
+        <animate attributeName="height" values="26;54;26" dur="1.9s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="150;122;150" dur="1.9s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="87" y="130" width="12" height="46" rx="3">
+        <animate attributeName="height" values="46;24;46" dur="2.3s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="130;152;130" dur="2.3s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="107" y="142" width="12" height="34" rx="3">
+        <animate attributeName="height" values="34;62;34" dur="2.0s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="142;114;142" dur="2.0s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="127" y="124" width="12" height="52" rx="3">
+        <animate attributeName="height" values="52;30;52" dur="2.7s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="124;146;124" dur="2.7s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="147" y="154" width="12" height="22" rx="3">
+        <animate attributeName="height" values="22;50;22" dur="1.7s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="154;126;154" dur="1.7s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+
+    <text x="113" y="197" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="10" fill="#64748b">Playlist · Scheduler</text>
+
+    <!-- ============ TARJETA 2 · ENCODER ============ -->
+    <rect x="268" y="66" width="156" height="130" rx="12" fill="#0f172a" stroke="#1e3a5f" stroke-width="1.5"/>
+    <text x="346" y="88" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="12" font-weight="700" fill="#e2e8f0">Encoder</text>
+
+    <circle cx="346" cy="131" r="22" fill="none" stroke="url(#gAcc)" stroke-width="2"/>
+    <circle cx="346" cy="131" r="22" fill="none" stroke="#38bdf8" stroke-width="2">
+      <animate attributeName="r" values="22;36;22" dur="2.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.75;0;0.75" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="346" y="136" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="11" font-weight="700" fill="#e2e8f0">MP3</text>
+
+    <text x="346" y="184" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="10" fill="#64748b">128 kbps · Stereo</text>
+
+    <!-- ============ TARJETA 3 · SERVIDOR ============ -->
+    <rect x="486" y="52" width="176" height="158" rx="12" fill="#0f172a" stroke="#1e3a5f" stroke-width="1.5"/>
+    <text x="574" y="78" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="13" font-weight="700" fill="#e2e8f0">Servidor</text>
+
+    <rect x="524" y="92" width="100" height="26" rx="6" fill="#0b1220" stroke="#1e3a5f" stroke-width="1.2"/>
+    <rect x="524" y="126" width="100" height="26" rx="6" fill="#0b1220" stroke="#1e3a5f" stroke-width="1.2"/>
+
+    <circle cx="538" cy="105" r="4" fill="#34d399">
+      <animate attributeName="opacity" values="1;0.15;1" dur="1.4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="538" cy="139" r="4" fill="#38bdf8">
+      <animate attributeName="opacity" values="0.15;1;0.15" dur="1.4s" repeatCount="indefinite"/>
+    </circle>
+
+    <text x="584" y="109" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="9" fill="#94a3b8">Icecast</text>
+    <text x="584" y="143" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="9" fill="#94a3b8">Shoutcast</text>
+
+    <text x="574" y="197" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="10" fill="#64748b">Distribución</text>
+
+    <!-- ============ ONDAS ============ -->
+    <g fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round">
+      <path d="M662,105 A26,26 0 0 1 662,157" opacity="0">
+        <animate attributeName="opacity" values="0;0.9;0" dur="2.1s" begin="0s" repeatCount="indefinite"/>
+      </path>
+      <path d="M662,89 A42,42 0 0 1 662,173" opacity="0">
+        <animate attributeName="opacity" values="0;0.7;0" dur="2.1s" begin="0.35s" repeatCount="indefinite"/>
+      </path>
+      <path d="M662,73 A58,58 0 0 1 662,189" opacity="0">
+        <animate attributeName="opacity" values="0;0.5;0" dur="2.1s" begin="0.7s" repeatCount="indefinite"/>
+      </path>
+    </g>
+
+    <!-- ============ OYENTES ============ -->
+    <circle cx="770" cy="100" r="9" fill="#1e3a5f" stroke="#38bdf8" stroke-width="1.5">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="770" cy="131" r="9" fill="#1e3a5f" stroke="#38bdf8" stroke-width="1.5">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="770" cy="162" r="9" fill="#1e3a5f" stroke="#38bdf8" stroke-width="1.5">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="2.4s" begin="0.8s" repeatCount="indefinite"/>
+    </circle>
+
+    <text x="770" y="197" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif"
+          font-size="10" fill="#64748b">Oyentes</text>
+  </g>
+</svg>
+
+<!-- ============================================================
+     BARRA SUPERIOR
+     ============================================================ -->
+<header class="toolbar">
+  <div class="tb-inner">
+    <div class="brand">📻 <span>RadioBOSS</span>&nbsp;· Tutorial</div>
+    <div class="tb-tools">
+      <div class="search-wrap">
+        <input id="searchInput" type="search" placeholder="Buscar en el tutorial…" aria-label="Buscar en el tutorial">
+        <span id="searchCount" class="search-count"></span>
+      </div>
+      <button id="fontDown" class="tb-btn" type="button" title="Reducir tamaño del texto">A−</button>
+      <button id="fontUp" class="tb-btn" type="button" title="Aumentar tamaño del texto">A+</button>
+      <button id="themeBtn" class="tb-btn" type="button" title="Cambiar entre modo oscuro y claro">☀️ Claro</button>
+      <button id="printBtn" class="tb-btn" type="button" title="Imprimir o guardar como PDF">🖨 PDF</button>
+    </div>
+  </div>
+  <div class="progress-bar" aria-hidden="true"><div id="progressFill"></div></div>
+</header>
+
+<!-- ============================================================
+     PESTAÑAS
+     ============================================================ -->
+<nav class="tabs" aria-label="Secciones del tutorial">
+  <div class="tabs-inner" id="tabsInner" role="tablist">
+    <button class="tab active" type="button" role="tab" data-tab="inicio" aria-selected="true">INICIO</button>
+    <button class="tab" type="button" role="tab" data-tab="conceptos" aria-selected="false">CONCEPTOS</button>
+    <button class="tab" type="button" role="tab" data-tab="radioboss" aria-selected="false">RADIOBOSS</button>
+    <button class="tab" type="button" role="tab" data-tab="streaming" aria-selected="false">STREAMING</button>
+    <button class="tab" type="button" role="tab" data-tab="procedimiento" aria-selected="false">PROCEDIMIENTO</button>
+    <button class="tab" type="button" role="tab" data-tab="practica" aria-selected="false">PRÁCTICA</button>
+    <button class="tab" type="button" role="tab" data-tab="errores" aria-selected="false">ERRORES</button>
+    <button class="tab" type="button" role="tab" data-tab="resumen" aria-selected="false">RESUMEN</button>
+    <button class="tab" type="button" role="tab" data-tab="fuentes" aria-selected="false">FUENTES</button>
+    <button class="tab" type="button" role="tab" data-tab="creditos" aria-selected="false">CRÉDITOS</button>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- ============================================================
+     PANEL · INICIO
+     ============================================================ -->
+<section class="panel active" id="p-inicio" role="tabpanel" aria-label="Inicio">
+
+  <div class="hero-svg-mount" data-svg-hero="true" role="img"
+       aria-label="Diagrama animado: RadioBOSS reproduce y automatiza el audio, el encoder lo convierte en un stream y el servidor lo distribuye por Internet a los oyentes."></div>
+  <p class="hero-caption">RadioBOSS produce → el encoder convierte → el servidor distribuye → el oyente escucha.</p>
+
+  <h1>Crear una radio streaming con DJSoft / RadioBOSS</h1>
+  <p class="lead">Un tutorial para <strong>dummies</strong>: entender qué es cada pieza, para qué sirve y cómo montarla paso a paso, sin dar nada por supuesto.</p>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo del tutorial</span>
+    Construir una emisora de radio por Internet desde cero con RadioBOSS, entender qué hace cada componente
+    y dejar una configuración preparada para funcionar de forma automatizada, incluso 24/7.
+  </div>
+
+  <h2>¿Qué vas a aprender?</h2>
+  <div class="grid two">
+    <div class="card">
+      <h4>🧠 Entender</h4>
+      <ul>
+        <li>Qué es realmente una radio streaming.</li>
+        <li>Qué diferencia hay entre <em>producir</em>, <em>codificar</em> y <em>distribuir</em>.</li>
+        <li>Qué hacen RadioBOSS, RadioCaster y RadioLogger.</li>
+        <li>Por qué el servidor de streaming es imprescindible.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>🛠️ Hacer</h4>
+      <ul>
+        <li>Instalar y preparar RadioBOSS.</li>
+        <li>Organizar la música y crear playlists.</li>
+        <li>Programar eventos con el Scheduler.</li>
+        <li>Configurar un encoder y emitir por Internet.</li>
+        <li>Publicar metadatos «Now Playing».</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>¿Para qué sirve esto?</h2>
+  <p>
+    Una radio por Internet no es «un programa que reproduce MP3». Es un <strong>sistema</strong> con varias capas:
+    contenido, automatización, codificación, transporte, servidor y oyente. Si entiendes las capas, entiendes la radio.
+  </p>
+
+  <div class="box tip">
+    <span class="box-title">Idea clave</span>
+    <strong>RadioBOSS decide y produce lo que sale al aire.</strong><br>
+    El <strong>encoder</strong> convierte el audio en un stream.<br>
+    El <strong>servidor</strong> distribuye ese stream.<br>
+    El <strong>reproductor</strong> permite que el oyente lo escuche.
+  </div>
+
+  <h2>¿Qué necesitas antes de empezar?</h2>
+  <div class="grid three">
+    <div class="card tight">
+      <h4>💻 Hardware</h4>
+      <ul>
+        <li>Un PC con Windows.</li>
+        <li>Conexión a Internet estable.</li>
+        <li>(Opcional) micrófono o mesa de mezclas.</li>
+      </ul>
+    </div>
+    <div class="card tight">
+      <h4>🎵 Contenido</h4>
+      <ul>
+        <li>Música en MP3 u otros formatos.</li>
+        <li>Jingles, cuñas e identificaciones.</li>
+        <li>Una carpeta organizada.</li>
+      </ul>
+    </div>
+    <div class="card tight">
+      <h4>🌐 Servicio</h4>
+      <ul>
+        <li>Un servidor de streaming contratado <em>o</em> propio.</li>
+        <li>Servidor, puerto y contraseña.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Objetivos de aprendizaje</h2>
+  <ol>
+    <li>Explicar con tus palabras la arquitectura de una radio streaming.</li>
+    <li>Distinguir RadioBOSS, RadioCaster y RadioLogger.</li>
+    <li>Preparar una biblioteca musical y una playlist.</li>
+    <li>Crear un evento en el Scheduler.</li>
+    <li>Configurar un encoder y conectarlo a un servidor.</li>
+    <li>Comprobar que un oyente externo escucha la emisión.</li>
+    <li>Publicar metadatos «Now Playing».</li>
+    <li>Dejar la emisora automatizada para funcionar sola.</li>
+  </ol>
+
+  <h2>Cómo usar este tutorial</h2>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Lee primero la pestaña CONCEPTOS.</strong>
+      <span class="why">Sin entender la arquitectura, los botones no significan nada.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Consulta RADIOBOSS y STREAMING cuando necesites detalle.</strong>
+      <span class="why">Son las dos piezas centrales del sistema.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Sigue PROCEDIMIENTO con el programa abierto.</strong>
+      <span class="why">Cada paso indica qué hacer, por qué y qué deberías ver.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong class="act">Haz los ejercicios de PRÁCTICA.</strong>
+      <span class="why">Es la forma de comprobar que de verdad lo has entendido.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <strong class="act">Usa la barra superior.</strong>
+      <span class="why">Tienes buscador, tamaño de texto, modo claro/oscuro y guardar como PDF.</span>
+    </div>
+  </div>
+
+  <div class="box warn">
+    <span class="box-title">Aviso importante</span>
+    Este tutorial es <strong>didáctico</strong>. Los precios, versiones y condiciones citadas provienen de la
+    documentación de referencia y pueden cambiar. Antes de comprar o contratar algo, verifica siempre la web oficial de DJSoft.
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANEL · CONCEPTOS
+     ============================================================ -->
+<section class="panel" id="p-conceptos" role="tabpanel" aria-label="Conceptos">
+
+  <h1>Conceptos: qué es realmente una radio streaming</h1>
+  <p class="lead">Antes de tocar ningún botón, hay que entender las piezas del sistema.</p>
+
+  <h2>1. La arquitectura básica</h2>
+  <div class="diagram">                 ┌──────────────────────┐
+                 │     RADIOBOSS        │
+                 │                      │
+ Música ────────►│ Playlist / Scheduler │
+ Locución ──────►│ Micrófono / entradas │
+ Eventos ───────►│ Automatización       │
+                 └──────────┬───────────┘
+                            │
+                            │ audio codificado
+                            ▼
+                 ┌──────────────────────┐
+                 │ SERVIDOR STREAMING   │
+                 │ Icecast / Shoutcast  │
+                 │ / otro proveedor     │
+                 └──────────┬───────────┘
+                            │
+                     Internet
+                            │
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+           Móvil         PC/Web         Smart TV
+           Oyente        Oyente          Oyente</div>
+
+  <div class="box tip">
+    <span class="box-title">Regla de oro</span>
+    <strong>RadioBOSS produce el programa de radio. El servidor de streaming lo distribuye a los oyentes.</strong>
+    Son dos cosas distintas y conviene no confundirlas nunca.
+  </div>
+
+  <h2>2. Los cuatro elementos de una radio</h2>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>🎵 Contenido</h3>
+      <p>Es <em>lo que</em> queremos emitir:</p>
+      <ul>
+        <li>música</li>
+        <li>programas y entrevistas</li>
+        <li>noticias</li>
+        <li>publicidad y cuñas</li>
+        <li>jingles e identificaciones</li>
+        <li>podcasts y locuciones</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>⚙️ Automatización</h3>
+      <p>Es <em>la lógica</em> que decide qué suena y cuándo. Aquí entra RadioBOSS.</p>
+      <pre><code>08:00  Jingle
+08:01  Canción
+08:05  Canción
+08:09  Cuña
+08:10  Canción
+08:14  Canción
+08:18  Identificación
+08:19  Canción</code></pre>
+    </div>
+
+    <div class="card">
+      <h3>📡 Streaming</h3>
+      <p>Es la <em>transmisión</em> del audio por Internet. El ordenador envía datos continuamente a un servidor.</p>
+    </div>
+
+    <div class="card">
+      <h3>🌍 Distribución</h3>
+      <p>El servidor entrega el stream a los oyentes.</p>
+      <p class="small">La conexión de tu ordenador <strong>no</strong> tiene que soportar directamente a todos los oyentes: de eso se encarga el servidor.</p>
+    </div>
+  </div>
+
+  <h2>3. Los tres productos de DJSoft</h2>
+  <p>DJSoft ofrece tres herramientas que conviene no confundir.</p>
+
+  <div class="grid three">
+    <div class="card">
+      <h3>RadioBOSS</h3>
+      <p><strong>El cerebro de la emisora.</strong></p>
+      <ul>
+        <li>Reproduce música</li>
+        <li>Crea playlists</li>
+        <li>Automatiza la programación</li>
+        <li>Programa anuncios y cuñas</li>
+        <li>Inserta señales horarias</li>
+        <li>Hace crossfade y nivelado</li>
+        <li>Controla micrófono y entradas</li>
+        <li>Emite por Internet</li>
+        <li>Envía metadatos</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>RadioCaster</h3>
+      <p><strong>Codificador de audio en directo.</strong></p>
+      <p>Recibe audio de una fuente externa y lo convierte en un stream:</p>
+      <ul>
+        <li>mesa de mezclas</li>
+        <li>entrada de audio</li>
+        <li>otro programa sin codificador propio</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>RadioLogger</h3>
+      <p><strong>Grabador y archivador de emisiones.</strong></p>
+      <ul>
+        <li>Grabación continua</li>
+        <li>Archivo de programas</li>
+        <li>Registro de publicidad</li>
+        <li>Compresión MP3 / OGG</li>
+        <li>Borrado automático de grabaciones antiguas</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Esquema de RadioCaster</h3>
+  <div class="diagram">Fuente de audio
+      │
+      ▼
+RadioCaster
+      │
+      ▼
+Icecast / Shoutcast
+      │
+      ▼
+Oyentes</div>
+
+  <h3>Esquema con RadioLogger</h3>
+  <div class="diagram">             RADIOBOSS
+                 │
+       ┌─────────┴─────────┐
+       ▼                   ▼
+ Streaming             RadioLogger
+       │                   │
+       ▼                   ▼
+ Oyentes               Archivo</div>
+
+  <h2>4. ¿Necesito los tres programas?</h2>
+  <p><strong>No.</strong> Para una radio musical automatizada básica basta con <strong>RadioBOSS + servidor de streaming</strong>.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Programa</th><th class="c">¿Imprescindible?</th><th>Cuándo tiene sentido</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>RadioBOSS</td><td class="c">Sí</td><td>Siempre. Es el centro de la emisora.</td></tr>
+        <tr><td>Servidor streaming</td><td class="c">Sí</td><td>Siempre. Sin destino no hay emisión.</td></tr>
+        <tr><td>RadioCaster</td><td class="c">No</td><td>Cuando el audio viene de una mesa de mezclas o de un programa sin codificador.</td></tr>
+        <tr><td>RadioLogger</td><td class="c">No</td><td>Cuando quieres conservar una copia de todo lo emitido.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Ejemplo mínimo</h3>
+  <div class="diagram">PC Windows
+   │
+   └── RadioBOSS
+          │
+          ▼
+    Servidor streaming
+          │
+          ▼
+       Internet
+          │
+          ▼
+       Oyentes</div>
+
+  <h3>Ejemplo más completo</h3>
+  <div class="diagram">                         ┌── RadioLogger
+                         │
+                         ▼
+Audio ──► RadioBOSS ─────────► Archivo
+             │
+             ▼
+       Codificadores
+             │
+             ▼
+    Servidor streaming
+             │
+             ▼
+          Internet</div>
+
+  <h2>5. Las capas del sistema</h2>
+  <p>Pensar en capas evita muchísimos errores. Cuando algo falla, casi siempre puedes aislar la capa culpable.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Capa</th><th>Qué es</th><th>Ejemplos</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1. Contenido</td><td>Los archivos y las voces</td><td>MP3, jingles, publicidad, locución</td></tr>
+        <tr><td>2. Automatización</td><td>Quién decide qué suena</td><td>RadioBOSS, Scheduler, playlists</td></tr>
+        <tr><td>3. Codificación</td><td>Convertir audio en stream</td><td>MP3, AAC, OGG, OPUS</td></tr>
+        <tr><td>4. Transporte</td><td>El camino de los datos</td><td>Internet</td></tr>
+        <tr><td>5. Servidor</td><td>Quién reparte el audio</td><td>Icecast, Shoutcast, proveedor</td></tr>
+        <tr><td>6. Oyente</td><td>Quién escucha</td><td>Web, móvil, app, Smart TV</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>6. No confundir software, servicio e infraestructura</h2>
+  <div class="diagram">RadioBOSS        ≠  Software de automatización
+Servidor         ≠  Infraestructura de distribución
+Internet         ≠  Transporte
+Web              ≠  Interfaz del oyente
+Derechos         ≠  Cuestión legal independiente</div>
+
+  <div class="box warn">
+    <span class="box-title">Muy importante</span>
+    Que técnicamente puedas emitir una canción <strong>no</strong> significa que legalmente puedas hacerlo sin autorización.
+    <strong>RadioBOSS no proporciona automáticamente los derechos de emisión de la música.</strong>
+  </div>
+
+  <h2>7. El coste real de una radio</h2>
+  <p>El software no es el único coste. Hay que considerar:</p>
+  <div class="diagram">RadioBOSS
++
+Streaming hosting
++
+Dominio
++
+Web
++
+Internet
++
+Electricidad
++
+Hardware
++
+Micrófono
++
+Música / licencias
++
+Posibles servicios adicionales</div>
+
+  <div class="box tip">
+    <span class="box-title">Tranquilidad</span>
+    Una radio pequeña puede empezar con muy poco hardware. No hace falta montar una infraestructura de televisión nacional para aprender.
+  </div>
+
+  <h2>Resumen del capítulo</h2>
+  <ul>
+    <li>Una radio streaming tiene cuatro elementos: contenido, automatización, streaming y distribución.</li>
+    <li>RadioBOSS es el cerebro; el servidor es el repartidor.</li>
+    <li>RadioCaster y RadioLogger son opcionales según el caso.</li>
+    <li>RadioBOSS no es «la radio entera»: es una pieza del sistema.</li>
+    <li>Los derechos musicales son una cuestión legal aparte del software.</li>
+  </ul>
+
+</section>
+
+<!-- ============================================================
+     PANEL · RADIOBOSS
+     ============================================================ -->
+<section class="panel" id="p-radioboss" role="tabpanel" aria-label="RadioBOSS">
+
+  <h1>RadioBOSS: el centro de control</h1>
+  <p class="lead">Todo lo que ocurre «dentro» de la emisora pasa por aquí.</p>
+
+  <h2>¿Qué es RadioBOSS?</h2>
+  <p>Es el programa que reproduce, organiza y automatiza la emisora. Es el <strong>cerebro</strong>.</p>
+
+  <div class="grid two">
+    <div class="card">
+      <h4>Funciones principales</h4>
+      <ul>
+        <li>Reproducción de audio y vídeo (según edición)</li>
+        <li>Playlists y reproducción ininterrumpida</li>
+        <li>Crossfade y nivelado automático</li>
+        <li>Programación de eventos (Scheduler)</li>
+        <li>Generación automática de playlists</li>
+        <li>Anuncios y cuñas</li>
+        <li>Micrófono y entrada de línea</li>
+        <li>Streaming y metadatos</li>
+        <li>Estadísticas</li>
+        <li>Perfiles y API de control remoto</li>
+        <li>Múltiples codificadores</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Novedades de la versión de referencia (7.2.4)</h4>
+      <ul>
+        <li>Virtual Mixer</li>
+        <li>Mejoras del programador</li>
+        <li>Programación por franjas horarias</li>
+        <li>Generador de playlists mejorado</li>
+        <li>Gestor de disposición</li>
+        <li>Mejoras de reproducción</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Ediciones de RadioBOSS</h2>
+  <p>DJSoft ofrece tres ediciones. Los precios son los indicados por DJSoft en la fecha de referencia y pueden cambiar.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Característica</th><th class="c">Standard</th><th class="c">Advanced</th><th class="c">Ultimate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Precio indicado por DJSoft</td><td class="c">€179</td><td class="c">€229</td><td class="c">€279</td></tr>
+        <tr><td>Audio</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Vídeo</td><td class="c">No</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Control de usuarios</td><td class="c">No</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Dayparting (franjas horarias)</td><td class="c">No</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Extensión temporal</td><td class="c">No</td><td class="c">No</td><td class="c">Sí</td></tr>
+        <tr><td>Seguimiento de voz remoto</td><td class="c">No</td><td class="c">No</td><td class="c">Sí</td></tr>
+        <tr><td>Mesa de mezclas virtual</td><td class="c">No</td><td class="c">No</td><td class="c">Sí</td></tr>
+        <tr><td>Scheduler</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Generador de playlists</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Reproducción automática</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Streaming</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Metadatos</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>Micrófono / entrada de línea</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+        <tr><td>API de control remoto</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tip">
+    <span class="box-title">Recomendación conceptual</span>
+    Para aprender y montar una radio musical por Internet, la edición <strong>Standard</strong> ya contiene las funciones fundamentales.
+    Advanced y Ultimate tienen sentido cuando necesitas funciones profesionales adicionales.
+  </div>
+
+  <h2>Licencia: algo importante</h2>
+  <p>DJSoft indica que las licencias de RadioBOSS, RadioLogger y RadioCaster son <strong>perpetuas</strong>.</p>
+  <ul>
+    <li>La licencia comprada <strong>no desaparece</strong> al terminar el periodo de actualización.</li>
+    <li>La compra incluye <strong>un año</strong> de actualizaciones y soporte.</li>
+    <li>La renovación posterior es <strong>opcional</strong>.</li>
+  </ul>
+  <p class="small">Es un modelo distinto al de una suscripción pura.</p>
+
+  <h2>Descarga e instalación en Windows</h2>
+  <p>En la fecha de referencia, la página oficial mostraba <strong>RadioBOSS 7.2.4</strong> (22/08/2026, ~31,4 MB).</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Descarga RadioBOSS desde la web oficial de DJSoft.</strong>
+      <span class="why">Evita descargas de terceros: pueden incluir software no deseado o versiones manipuladas.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Ejecuta el instalador.</strong>
+      <span class="why">Windows puede pedir confirmación de administrador.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Sigue el asistente con las opciones apropiadas.</strong>
+      <span class="why">No necesitas cambiar nada especial para empezar.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong class="act">Inicia RadioBOSS.</strong>
+      <span class="why">Comprueba que abre correctamente antes de seguir.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <strong class="act">Activa la licencia o usa la versión de demostración.</strong>
+      <span class="why">Para aprender, la demo de DJSoft es suficiente.</span>
+    </div>
+  </div>
+
+  <h2>Preparar la música</h2>
+  <p>Antes de pensar en Internet, prepara bien el contenido. Una estructura clara te ahorrará horas después.</p>
+
+  <div class="diagram">RADIO/
+│
+├── MUSIC/
+│   ├── Rock/
+│   ├── Pop/
+│   ├── Jazz/
+│   └── Instrumental/
+│
+├── JINGLES/
+│
+├── ADS/
+│
+├── IDENTS/
+│
+├── PROGRAMS/
+│
+├── VOICE/
+│
+└── ARCHIVE/</div>
+
+  <div class="box tip">
+    <span class="box-title">No es obligatorio</span>
+    RadioBOSS no exige esta estructura. Es una <strong>recomendación de organización</strong> que te facilitará la vida.
+  </div>
+
+  <h2>Crear la identidad de la radio</h2>
+  <p>Antes de configurar el streaming, define quién eres:</p>
+
+  <div class="diagram">Nombre:
+Descripción:
+URL:
+Género:
+País:
+Idioma:
+Logo:
+Web:
+Contacto:</div>
+
+  <h3>Ejemplo</h3>
+  <div class="diagram">Nombre: Radio Valencia
+Descripción: Música, cultura y vida valenciana
+Género: Adult Contemporary
+País: España
+Idioma: Español
+Web: https://ejemplo.com</div>
+
+  <h2>Playlists</h2>
+  <p>Una playlist es simplemente una secuencia de contenidos.</p>
+  <div class="diagram">Jingle
+  ↓
+Canción 1
+  ↓
+Canción 2
+  ↓
+Canción 3
+  ↓
+Cuña
+  ↓
+Canción 4
+  ↓
+Identificación
+  ↓
+Canción 5</div>
+
+  <h2>Automatización: por qué es imprescindible</h2>
+  <p>Una radio profesional no puede depender de que alguien pulse <em>Play</em> cada diez minutos.</p>
+
+  <div class="diagram">06:00  Iniciar programación
+08:00  Bloque desayuno
+10:00  Música
+12:00  Noticias
+12:05  Música
+14:00  Programa
+16:00  Música
+20:00  Especial
+00:00  Programación nocturna</div>
+
+  <h2>El Scheduler</h2>
+  <p>Es uno de los componentes más importantes. Permite indicar <strong>fecha, hora, archivo, playlist, comando, repetición y comportamiento</strong>.</p>
+
+  <div class="box obj">
+    <span class="box-title">Ejemplo</span>
+    Queremos emitir un jingle todos los días a las 12:00.
+    <pre><code>Evento:
+    Hora   = 12:00
+    Días   = lunes-domingo
+    Acción = reproducir JINGLE_12.mp3</code></pre>
+  </div>
+
+  <h3>Comandos útiles del Scheduler</h3>
+  <p>RadioBOSS incluye comandos para operaciones como:</p>
+  <div class="grid two">
+    <div class="card tight">
+      <ul>
+        <li>play / stop / pause / next</li>
+        <li>setvol (cambiar volumen)</li>
+        <li>fadeout</li>
+        <li>generar playlist</li>
+        <li>obtener playlist aleatoria</li>
+        <li>limpiar playlist</li>
+      </ul>
+    </div>
+    <div class="card tight">
+      <ul>
+        <li>conectar / desconectar broadcast</li>
+        <li>cambiar título</li>
+        <li>activar / desactivar Scheduler</li>
+        <li>iniciar / detener relay</li>
+        <li>archivar streams</li>
+        <li>detector de silencio, backups, descargar, clima…</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Generación automática de playlists</h2>
+  <div class="diagram">Biblioteca musical
+       │
+       ▼
+Reglas
+       │
+       ▼
+Generador
+       │
+       ▼
+Playlist
+       │
+       ▼
+Scheduler
+       │
+       ▼
+Emisión</div>
+
+  <h2>Franjas horarias (Dayparting)</h2>
+  <p>Permiten definir qué tipo de contenido puede sonar en cada periodo.</p>
+  <div class="diagram">06:00–10:00  Música de mañana
+10:00–14:00  Música general
+14:00–16:00  Programa
+16:00–20:00  Música
+20:00–00:00  Música nocturna</div>
+  <p class="small">Esta función es propia de las ediciones que incluyen Dayparting (Advanced y Ultimate).</p>
+
+  <h2>Crossfade</h2>
+  <p>Suaviza la transición entre canciones y da sensación de emisora profesional.</p>
+  <div class="diagram">Sin crossfade:
+
+Canción A
+████████████████
+                 FIN
+
+Canción B
+                 ████████████████
+
+Con crossfade:
+
+Canción A
+███████████████
+             ███
+                ███
+
+Canción B
+             ███
+                ███████████████</div>
+
+  <h2>Nivelado de volumen</h2>
+  <p>Las canciones suelen estar masterizadas con niveles distintos:</p>
+  <div class="diagram">Canción A → muy fuerte
+Canción B → muy baja
+Canción C → muy fuerte</div>
+  <p>RadioBOSS incorpora funciones de nivelado automático para homogeneizar la experiencia.</p>
+
+  <h2>Micrófono y entradas</h2>
+  <p>Permite combinar música, micrófono, cuñas y jingles:</p>
+  <div class="diagram">Música
+  ↓
+Baja música
+  ↓
+Locutor habla
+  ↓
+Sube música
+  ↓
+Siguiente canción</div>
+
+  <h2>Resumen del capítulo</h2>
+  <ul>
+    <li>RadioBOSS es el cerebro: reproduce, organiza y automatiza.</li>
+    <li>Hay tres ediciones: Standard, Advanced y Ultimate.</li>
+    <li>La licencia es perpetua; las actualizaciones son anuales y renovables.</li>
+    <li>El Scheduler y la generación de playlists son el corazón de la automatización.</li>
+    <li>Crossfade y nivelado marcan la diferencia entre «aficionado» y «profesional».</li>
+  </ul>
+
+</section>
+
+<!-- ============================================================
+     PANEL · STREAMING
+     ============================================================ -->
+<section class="panel" id="p-streaming" role="tabpanel" aria-label="Streaming">
+
+  <h1>Streaming: convertir el audio en algo que viaja por Internet</h1>
+  <p class="lead">Aquí es donde la radio deja de ser local y empieza a tener oyentes.</p>
+
+  <h2>¿Qué es un stream?</h2>
+  <p>Es un flujo continuo de audio codificado que viaja por Internet y que el oyente puede escuchar sin descargar el archivo completo.</p>
+
+  <h2>Destinos que soporta RadioBOSS</h2>
+  <div class="grid two">
+    <div class="card tight">
+      <ul>
+        <li>Icecast</li>
+        <li>Shoutcast</li>
+        <li>Windows Media Server</li>
+        <li>Servidor de streaming integrado</li>
+        <li>RTMP</li>
+        <li>Otros servidores compatibles</li>
+      </ul>
+    </div>
+    <div class="card tight">
+      <p>También puede trabajar con <strong>múltiples codificadores simultáneamente</strong>.</p>
+      <div class="diagram">RadioBOSS
+   │
+   ├── MP3 128 kbps → servidor principal
+   │
+   ├── AAC 64 kbps  → servidor móvil
+   │
+   └── otro encoder → otro destino</div>
+    </div>
+  </div>
+
+  <h2>Necesitamos un servidor de streaming</h2>
+  <p>RadioBOSS genera el stream. Pero hace falta un destino que lo reciba y lo distribuya.</p>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>Opción A — Contratar hosting</h3>
+      <p>Es la opción sencilla. El proveedor te da normalmente:</p>
+      <ul>
+        <li>Servidor</li>
+        <li>Puerto</li>
+        <li>Contraseña</li>
+        <li>Mount point / configuración</li>
+        <li>Límites de oyentes</li>
+        <li>Panel y estadísticas</li>
+      </ul>
+      <p class="small">Tú solo tienes que conectar RadioBOSS a esos datos.</p>
+    </div>
+
+    <div class="card">
+      <h3>Opción B — Montar tu propio servidor</h3>
+      <p>Más control, más trabajo. Requiere conocimientos de:</p>
+      <ul>
+        <li>Redes y puertos</li>
+        <li>Firewall y seguridad</li>
+        <li>Administración de servidores</li>
+        <li>Ancho de banda</li>
+        <li>Disponibilidad</li>
+      </ul>
+      <p class="small">Para una primera radio, el hosting especializado suele ser mejor idea.</p>
+    </div>
+  </div>
+
+  <h2>RadioBOSS.FM</h2>
+  <p>DJSoft ofrece un servicio de hosting de streaming llamado <strong>RadioBOSS.FM</strong>. En la fecha de referencia anunciaba planes desde aproximadamente <strong>12 $/mes</strong>.</p>
+  <ul>
+    <li>Panel de control</li>
+    <li>Estadísticas</li>
+    <li>AutoDJ</li>
+    <li>Configuración inmediata</li>
+    <li>Streaming por puerto 80</li>
+    <li>Soporte</li>
+    <li>Escalabilidad</li>
+  </ul>
+  <p class="small">Verifica siempre precios y condiciones antes de contratar.</p>
+
+  <h2>Configurar el encoder paso a paso</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Abre <code class="inline">Settings → Options</code>.</strong>
+      <span class="why">Es el punto de entrada a toda la configuración global.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Entra en <code class="inline">Broadcast, Metadata</code>.</strong>
+      <span class="why">Aquí se configuran emisión y metadatos.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Introduce la información de la estación.</strong>
+      <span class="why">Esta información se puede usar globalmente.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong class="act">Selecciona <code class="inline">Broadcast</code>.</strong>
+      <span class="why">Es la sección donde viven los encoders.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <strong class="act">Pulsa <code class="inline">+</code> para crear un encoder.</strong>
+      <span class="why">Cada encoder es una salida independiente con su propia configuración.</span>
+    </div>
+  </div>
+
+  <h3>Información de la estación</h3>
+  <div class="diagram">Station name
+Description
+URL
+Genre
+...y otros parámetros disponibles</div>
+  <p class="small">Esta información puede utilizarse globalmente, pero cada encoder puede tener información específica.</p>
+
+  <h3>Datos que necesita el encoder</h3>
+  <div class="diagram">Server
+Port
+Password
+Encoder type
+Bitrate
+Sample rate
+Channels</div>
+  <p>Todos ellos dependen del servidor de streaming contratado.</p>
+
+  <div class="box tip">
+    <span class="box-title">Configuración inicial recomendada por la documentación de RadioBOSS</span>
+    Si tu proveedor no indica otra cosa:
+    <pre><code>Sample rate: 44100 Hz
+Encoder:     MP3
+Bitrate:     128 kbps
+Channels:    Stereo</code></pre>
+    No asumas que esta configuración es universal. <strong>Comprueba siempre las especificaciones de tu servidor.</strong>
+  </div>
+
+  <h2>Ejemplo conceptual completo</h2>
+  <div class="box obj">
+    <span class="box-title">Datos que te da el proveedor</span>
+    <pre><code>Servidor:  radio.ejemplo.com
+Puerto:    8000
+Contraseña: ********
+Formato:   MP3
+Bitrate:   128 kbps
+Stereo:    Sí</code></pre>
+  </div>
+
+  <p>Introducirías esos datos en el encoder. El flujo sería:</p>
+  <div class="diagram">RadioBOSS
+    │
+    │ MP3 128 kbps
+    ▼
+radio.ejemplo.com:8000
+    │
+    ▼
+Internet
+    │
+    ▼
+Oyentes</div>
+
+  <h2>Activar el broadcasting</h2>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body"><strong class="act">Comprueba que el encoder está seleccionado.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><strong class="act">Activa la opción de broadcasting.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body"><strong class="act">Acepta la configuración.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body"><strong class="act">Reproduce audio.</strong></div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Si la conexión es correcta, RadioBOSS muestra en el informe:
+    <pre><code>Connected to server!</code></pre>
+    Eso significa que el servidor está recibiendo tu stream.
+  </div>
+
+  <h2>¿Qué audio se envía?</h2>
+  <p>RadioBOSS permite seleccionar la fuente del encoder.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Opción</th><th>Qué transmite</th><th>Cuándo usarla</th></tr></thead>
+      <tbody>
+        <tr><td><code class="inline">Audio mix</code></td><td>Lo que se está reproduciendo en la playlist</td><td>Caso habitual</td></tr>
+        <tr><td><code class="inline">Input 1 / 2 / 3</code></td><td>Una entrada de audio concreta</td><td>Cuando tienes una mesa de mezclas conectada al PC</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Metadatos: «Now Playing»</h2>
+  <p>Una radio moderna no solo transmite audio; también informa:</p>
+  <div class="diagram">Artista
+Canción
+Programa</div>
+
+  <p>RadioBOSS permite enviar información «Now Playing» con actualización:</p>
+  <ul>
+    <li>periódica;</li>
+    <li>al comenzar una pista.</li>
+  </ul>
+
+  <p>También permite enviar información mediante HTTP, FTP, archivos de texto o XML.</p>
+
+  <div class="box obj">
+    <span class="box-title">Ejemplo de resultado en la web</span>
+    <pre><code>AHORA SUENA
+
+Dire Straits
+Sultans of Swing</code></pre>
+  </div>
+
+  <h2>El reproductor web</h2>
+  <p>El reproductor necesita conocer la URL del stream:</p>
+  <div class="code-wrap">
+    <button class="copyBtn" type="button">COPIAR</button>
+    <pre><code>&lt;audio controls&gt;
+    &lt;source src="URL_DEL_STREAM"&gt;
+&lt;/audio&gt;</code></pre>
+  </div>
+  <p class="small">La implementación concreta depende del tipo de stream y del navegador.</p>
+
+  <h2>Ancho de banda: el cálculo que todo el mundo olvida</h2>
+  <p>Si emites a <strong>128 kbps</strong>, cada oyente consume aproximadamente <strong>128 kbps</strong> de stream.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Oyentes</th><th>Cálculo</th><th>Ancho de banda aproximado</th></tr></thead>
+      <tbody>
+        <tr><td>10</td><td>128 × 10</td><td>1.280 kbps ≈ 1,28 Mbps</td></tr>
+        <tr><td>100</td><td>128 × 100</td><td>12.800 kbps ≈ 12,8 Mbps</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Sin contar sobrecargas de protocolo.</p>
+
+  <div class="box warn">
+    <span class="box-title">No confundas velocidad con capacidad</span>
+    Una conexión rápida <strong>no</strong> significa que puedas atender miles de oyentes. Hay que considerar:
+    velocidad de subida, estabilidad, ancho de banda, límite de conexiones, CPU, servidor, infraestructura de red y tráfico total.
+  </div>
+
+  <h2>Varios bitrates</h2>
+  <p>Una estrategia profesional puede ofrecer varias calidades:</p>
+  <div class="diagram">128 kbps → calidad normal
+64 kbps  → móviles / conexiones lentas
+32 kbps  → baja velocidad</div>
+  <p>RadioBOSS permite múltiples codificadores, cada uno con su configuración.</p>
+
+  <div class="diagram">                    ┌── MP3 128
+                    │
+RadioBOSS ──────────┼── AAC 64
+                    │
+                    └── otro destino</div>
+
+  <h2>Icecast vs Shoutcast</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Aspecto</th><th>Icecast</th><th>Shoutcast</th></tr></thead>
+      <tbody>
+        <tr><td>Soporte en RadioBOSS</td><td>Sí</td><td>Sí</td></tr>
+        <tr><td>Elección depende de</td><td colspan="2">Proveedor, infraestructura, compatibilidad, preferencias, presupuesto y conocimientos técnicos</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Radio en directo con mesa de mezclas</h2>
+  <div class="diagram">Micrófono ──────┐
+                │
+Reproductor ────┼──► Mesa de mezclas
+                │
+Otra fuente ────┘
+                     │
+                     ▼
+               Entrada PC
+                     │
+                     ▼
+                RadioBOSS
+                     │
+                     ▼
+              Streaming</div>
+
+  <h2>Radio automática sin locutor</h2>
+  <div class="diagram">Carpeta música
+      │
+      ▼
+RadioBOSS
+      │
+      ├── Scheduler
+      ├── Playlists
+      ├── Jingles
+      ├── Publicidad
+      └── Metadata
+      │
+      ▼
+Streaming</div>
+
+  <h2>Montaje más sencillo posible</h2>
+  <div class="diagram">Windows PC
+   │
+   ▼
+RadioBOSS
+   │
+   ▼
+RadioBOSS.FM
+   │
+   ▼
+Internet
+   │
+   ▼
+Oyente</div>
+
+  <h2>Montaje profesional</h2>
+  <div class="diagram">                    ┌───────────────┐
+                    │ Biblioteca    │
+                    │ musical       │
+                    └───────┬───────┘
+                            ▼
+                     ┌─────────────┐
+                     │  RadioBOSS  │
+                     │             │
+                     │ Scheduler   │
+                     │ Playlists   │
+                     │ Mic         │
+                     │ Metadata    │
+                     └──────┬──────┘
+                            │
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+           Encoder 1     Encoder 2     Archivo
+              │             │             │
+              ▼             ▼             ▼
+          Streaming      Streaming     RadioLogger
+              │
+              ▼
+           Internet
+              │
+        ┌─────┼─────┐
+        ▼     ▼     ▼
+       Web   Móvil  App</div>
+
+  <h2>Estadísticas</h2>
+  <p>Dependiendo del servidor pueden obtenerse datos como:</p>
+  <ul>
+    <li>número de oyentes;</li>
+    <li>conexiones;</li>
+    <li>audiencia;</li>
+    <li>información del stream.</li>
+  </ul>
+  <p class="small">La información disponible depende del servidor.</p>
+
+  <h2>Resumen del capítulo</h2>
+  <ul>
+    <li>El encoder convierte el audio en un stream.</li>
+    <li>Sin servidor de streaming no hay oyentes.</li>
+    <li>El ancho de banda crece linealmente con el número de oyentes.</li>
+    <li>Puedes ofrecer varios bitrates con varios encoders.</li>
+    <li>Los metadatos «Now Playing» hacen que la radio parezca profesional.</li>
+  </ul>
+
+</section>
+
+<!-- ============================================================
+     PANEL · PROCEDIMIENTO
+     ============================================================ -->
+<section class="panel" id="p-procedimiento" role="tabpanel" aria-label="Procedimiento">
+
+  <h1>Procedimiento completo, paso a paso</h1>
+  <p class="lead">Cada bloque tiene: objetivo, explicación, pasos, resultado esperado y qué hacer si algo falla.</p>
+
+  <!-- ---------- BLOQUE 1 ---------- -->
+  <h2>Bloque 1 · Preparar el contenido</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Tener la música y los recursos organizados antes de configurar nada.
+  </div>
+
+  <p><strong>Explicación sencilla:</strong> RadioBOSS no ordena tu música por ti. Si la biblioteca está desordenada,
+  las playlists serán un caos y el Scheduler tendrá problemas para encontrar archivos.</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Crea una carpeta raíz llamada <code class="inline">RADIO</code>.</strong>
+      <span class="why">Tener una única raíz facilita copias de seguridad y búsquedas.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Crea dentro las subcarpetas <code class="inline">MUSIC</code>, <code class="inline">JINGLES</code>, <code class="inline">ADS</code>, <code class="inline">IDENTS</code>, <code class="inline">PROGRAMS</code>, <code class="inline">VOICE</code> y <code class="inline">ARCHIVE</code>.</strong>
+      <span class="why">Separar por tipo de contenido evita mezclar publicidad con música.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Organiza <code class="inline">MUSIC</code> por géneros.</strong>
+      <span class="why">Facilita las reglas del generador de playlists.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong class="act">Copia tus archivos de audio dentro de las carpetas correspondientes.</strong>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Tienes una estructura de carpetas coherente con todo el contenido en su sitio.
+  </div>
+
+  <div class="box warn">
+    <span class="box-title">Si algo falla</span>
+    Si tienes nombres duplicados o caracteres raros (<code class="inline">¿</code>, <code class="inline">*</code>, <code class="inline">|</code>),
+    renuébralos antes. Los nombres problemáticos causan errores difíciles de localizar.
+  </div>
+
+  <!-- ---------- BLOQUE 2 ---------- -->
+  <h2>Bloque 2 · Definir la identidad de la estación</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Tener escritos los datos básicos de la emisora antes de introducirlos en RadioBOSS.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body"><strong class="act">Escribe el nombre de la radio.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><strong class="act">Escribe una descripción breve (una frase).</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body"><strong class="act">Define el género principal y el idioma.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body"><strong class="act">Anota la URL de la web y un correo de contacto.</strong></div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Un pequeño documento con los datos listos para copiar y pegar.
+  </div>
+
+  <!-- ---------- BLOQUE 3 ---------- -->
+  <h2>Bloque 3 · Crear una playlist</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Tener una secuencia de contenidos que RadioBOSS pueda reproducir.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Añade un jingle al principio de la lista.</strong>
+      <span class="why">Da identidad sonora desde el primer segundo.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><strong class="act">Añade tres canciones.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Inserta una cuña publicitaria.</strong>
+      <span class="why">Es el hueco que luego automatizarás con el Scheduler.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body"><strong class="act">Añade una identificación de emisora.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <strong class="act">Guarda la playlist.</strong>
+      <span class="why">El Scheduler puede llamar a playlists guardadas por su nombre.</span>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Al pulsar Play, suena la secuencia completa sin intervención.
+  </div>
+
+  <!-- ---------- BLOQUE 4 ---------- -->
+  <h2>Bloque 4 · Ajustar crossfade y nivelado</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Que la emisora suene homogénea y profesional.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Activa el crossfade entre pistas.</strong>
+      <span class="why">Evita silencios bruscos entre canciones.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Activa el nivelado automático de volumen.</strong>
+      <span class="why">Corrige las diferencias de masterización entre canciones.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Escucha dos o tres canciones seguidas y ajusta si hace falta.</strong>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    No hay saltos de volumen ni cortes secos entre temas.
+  </div>
+
+  <!-- ---------- BLOQUE 5 ---------- -->
+  <h2>Bloque 5 · Crear un evento en el Scheduler</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Que la emisora emita algo concreto a una hora concreta, sin que nadie pulse nada.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body"><strong class="act">Abre la ventana del Scheduler.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><strong class="act">Crea un evento nuevo.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Fija la hora (por ejemplo, 12:00).</strong>
+      <span class="why">La hora se interpreta en la zona horaria del ordenador.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body"><strong class="act">Marca los días de la semana (lunes a domingo).</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <strong class="act">Selecciona la acción: reproducir <code class="inline">JINGLE_12.mp3</code>.</strong>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <strong class="act">Guarda el evento.</strong>
+      <span class="why">Sin guardar, el evento no se ejecuta nunca.</span>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    A las 12:00 el jingle suena automáticamente.
+  </div>
+
+  <div class="box warn">
+    <span class="box-title">Si algo falla</span>
+    Comprueba que la ruta del archivo es correcta y que el Scheduler está activado.
+    Un evento que apunta a un archivo movido falla en silencio.
+  </div>
+
+  <!-- ---------- BLOQUE 6 ---------- -->
+  <h2>Bloque 6 · Contratar o preparar el servidor</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Tener un destino donde RadioBOSS pueda enviar el stream.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Elige hosting especializado o monta tu propio servidor.</strong>
+      <span class="why">Para empezar, el hosting es mucho más rápido y sencillo.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Anota servidor, puerto, contraseña y formato.</strong>
+      <span class="why">Son los cuatro datos que necesitará el encoder.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Comprueba el límite de oyentes y el bitrate permitido.</strong>
+      <span class="why">Si emites a más bitrate del permitido, la conexión fallará.</span>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Tienes una ficha con: servidor, puerto, contraseña, formato, bitrate, canales.
+  </div>
+
+  <div class="box bad">
+    <span class="box-title">Nunca hagas esto</span>
+    No publiques la contraseña del servidor en una web, un foro o un repositorio público.
+  </div>
+
+  <!-- ---------- BLOQUE 7 ---------- -->
+  <h2>Bloque 7 · Configurar el encoder</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Que RadioBOSS sepa <em>dónde</em> y <em>cómo</em> enviar el audio.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body"><strong class="act">Abre <code class="inline">Settings → Options</code>.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><strong class="act">Entra en <code class="inline">Broadcast, Metadata</code>.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Rellena los datos de la estación (nombre, descripción, URL, género).</strong>
+      <span class="why">Aparecerán en los reproductores y en los directorios de radios.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body"><strong class="act">Entra en la sección <code class="inline">Broadcast</code>.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <strong class="act">Pulsa <code class="inline">+</code> para crear un nuevo encoder.</strong>
+      <span class="why">Cada encoder es una salida independiente.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body"><strong class="act">Introduce servidor, puerto y contraseña.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-body">
+      <strong class="act">Selecciona tipo de encoder, bitrate, sample rate y canales.</strong>
+      <span class="why">Si el proveedor no indica otra cosa: MP3, 128 kbps, 44100 Hz, estéreo.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-body">
+      <strong class="act">Selecciona la fuente de audio (<code class="inline">Audio mix</code> normalmente).</strong>
+      <span class="why">Eso transmite lo que se está reproduciendo en la playlist.</span>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    El encoder aparece en la lista, configurado y listo para conectarse.
+  </div>
+
+  <!-- ---------- BLOQUE 8 ---------- -->
+  <h2>Bloque 8 · Activar el broadcasting</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Que el servidor reciba tu stream.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body"><strong class="act">Selecciona el encoder que acabas de crear.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><strong class="act">Activa la opción de broadcasting.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body"><strong class="act">Acepta la configuración.</strong></div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body"><strong class="act">Pulsa Play para que haya audio sonando.</strong></div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    En el informe de RadioBOSS aparece <code class="inline">Connected to server!</code>
+  </div>
+
+  <div class="box bad">
+    <span class="box-title">Si aparece un error</span>
+    Consulta la pestaña ERRORES. Los más habituales son contraseña incorrecta, servidor mal escrito o puerto bloqueado.
+  </div>
+
+  <!-- ---------- BLOQUE 9 ---------- -->
+  <h2>Bloque 9 · Comprobar que se escucha desde fuera</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Verificar que un oyente externo recibe el audio.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Coge la URL pública del stream que te dio el proveedor.</strong>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Ábrela desde otro dispositivo (móvil con datos móviles).</strong>
+      <span class="why">Si usas la misma red WiFi puedes estar engañándote a ti mismo.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body"><strong class="act">Comprueba que suena y que suena lo mismo que en RadioBOSS.</strong></div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Escuchas tu emisora desde el móvil, fuera de tu red local.
+  </div>
+
+  <!-- ---------- BLOQUE 10 ---------- -->
+  <h2>Bloque 10 · Configurar metadatos «Now Playing»</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Que los reproductores y tu web muestren artista y título.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Activa el envío de metadatos en la configuración de emisión.</strong>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Elige el modo de actualización: periódica o al comenzar cada pista.</strong>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Comprueba en un reproductor o en la web del servidor que aparece el título.</strong>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    El reproductor muestra «Artista — Canción» mientras suena.
+  </div>
+
+  <!-- ---------- BLOQUE 11 ---------- -->
+  <h2>Bloque 11 · Automatizar el arranque 24/7</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Que la emisora se recupere sola después de un reinicio.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Prepara la programación completa del día en el Scheduler.</strong>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Configura RadioBOSS para que se inicie al arrancar Windows.</strong>
+      <span class="why">Así, tras un corte de luz, la radio vuelve sola.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Activa la reconexión automática del encoder.</strong>
+      <span class="why">Si se cae Internet, RadioBOSS vuelve a conectar cuando se recupere.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong class="act">Reinicia el ordenador y comprueba que todo vuelve a funcionar solo.</strong>
+    </div>
+  </div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Windows arranca → RadioBOSS arranca → la programación carga → el encoder conecta → la emisión continúa.
+  </div>
+
+  <div class="box warn">
+    <span class="box-title">Si algo falla</span>
+    Revisa que no haya ventanas de confirmación bloqueando el arranque y que la sesión de usuario se inicie automáticamente.
+  </div>
+
+  <!-- ---------- BLOQUE 12 ---------- -->
+  <h2>Bloque 12 · Detección de silencio y backups</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo</span>
+    Evitar que la emisora se quede muda y proteger la configuración.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong class="act">Activa las funciones de detección de silencio.</strong>
+      <span class="why">El silencio es uno de los peores problemas de una emisora automatizada.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong class="act">Define una acción de recuperación cuando se detecte silencio.</strong>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong class="act">Programa copias de seguridad de configuración, playlists y programación.</strong>
+      <span class="why">No guardes todo únicamente en el mismo disco.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong class="act">Guarda una copia local y otra externa (disco USB o nube).</strong>
+    </div>
+  </div>
+
+  <div class="diagram">PC principal
+     │
+     ├── Backup local
+     │
+     └── Backup externo</div>
+
+  <div class="box res">
+    <span class="box-title">Resultado esperado</span>
+    Si algo falla, puedes restaurar la emisora en poco tiempo.
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANEL · PRÁCTICA
+     ============================================================ -->
+<section class="panel" id="p-practica" role="tabpanel" aria-label="Práctica">
+
+  <h1>Práctica: ejercicios y proyecto guiado</h1>
+  <p class="lead">La teoría se entiende de verdad cuando la aplicas. Aquí tienes ejercicios con solución explicada.</p>
+
+  <h2>Ejercicio 1 · Identifica las capas</h2>
+  <div class="box obj">
+    <span class="box-title">Enunciado</span>
+    Ordena estas piezas según la capa a la que pertenecen: <em>Icecast</em>, <em>MP3</em>, <em>Scheduler</em>, <em>Internet</em>, <em>App móvil</em>, <em>Jingle</em>.
+  </div>
+  <details>
+    <summary>Ver solución explicada</summary>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pieza</th><th>Capa</th><th>Por qué</th></tr></thead>
+        <tbody>
+          <tr><td>Jingle</td><td>Contenido</td><td>Es un archivo de audio, materia prima de la emisión.</td></tr>
+          <tr><td>Scheduler</td><td>Automatización</td><td>Decide qué se reproduce y cuándo.</td></tr>
+          <tr><td>MP3</td><td>Codificación</td><td>Es el formato que convierte el audio en stream.</td></tr>
+          <tr><td>Internet</td><td>Transporte</td><td>Es el camino por el que viajan los datos.</td></tr>
+          <tr><td>Icecast</td><td>Servidor</td><td>Recibe el stream y lo reparte a los oyentes.</td></tr>
+          <tr><td>App móvil</td><td>Oyente</td><td>Es el cliente final que reproduce el audio.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <h2>Ejercicio 2 · ¿Qué programa necesito?</h2>
+  <div class="box obj">
+    <span class="box-title">Enunciado</span>
+    Tienes una mesa de mezclas conectada al PC y quieres emitir el audio que sale de ella.
+    ¿Necesitas RadioCaster si ya usas RadioBOSS?
+  </div>
+  <details>
+    <summary>Ver solución explicada</summary>
+    <p><strong>Depende de cómo estés usando RadioBOSS.</strong></p>
+    <ul>
+      <li>Si RadioBOSS ya está transmitiendo directamente al servidor y quieres enviar la mezcla de la mesa,
+      puedes usar la fuente de audio adecuada (entrada de línea) directamente en RadioBOSS. <strong>No necesitas RadioCaster.</strong></li>
+      <li>Si el audio de la mesa llega a otro programa del que no controlas la salida, o quieres codificarlo de forma independiente,
+      RadioCaster sí tiene sentido.</li>
+    </ul>
+    <p class="small">Añadir RadioCaster «por añadirlo» no aporta ninguna ventaja. Añade una capa más que puede fallar.</p>
+  </details>
+
+  <h2>Ejercicio 3 · Calcula el ancho de banda</h2>
+  <div class="box obj">
+    <span class="box-title">Enunciado</span>
+    Emites a 96 kbps. ¿Cuánto ancho de banda aproximado necesitas para 250 oyentes simultáneos?
+  </div>
+  <details>
+    <summary>Ver solución explicada</summary>
+    <pre><code>96 kbps × 250 oyentes = 24.000 kbps
+24.000 kbps / 1.000 = 24 Mbps</code></pre>
+    <p>Necesitarías aproximadamente <strong>24 Mbps solo para el stream</strong>, sin contar sobrecargas de protocolo,
+    tráfico del propio servidor ni el margen de seguridad recomendable.</p>
+    <p class="small">Moraleja: por eso el servidor de streaming es tan útil. Tu conexión doméstica no está pensada para esto.</p>
+  </details>
+
+  <h2>Ejercicio 4 · Diseña un evento de Scheduler</h2>
+  <div class="box obj">
+    <span class="box-title">Enunciado</span>
+    Quieres que todos los días laborables a las 07:00 suene el jingle de apertura y luego una playlist llamada <code class="inline">MANANA</code>.
+    Describe el evento.
+  </div>
+  <details>
+    <summary>Ver solución explicada</summary>
+    <pre><code>Evento 1:
+    Hora   = 07:00
+    Días   = lunes, martes, miércoles, jueves, viernes
+    Acción = reproducir JINGLE_APERTURA.mp3
+
+Evento 2:
+    Hora   = 07:00:15   (unos segundos después)
+    Días   = lunes, martes, miércoles, jueves, viernes
+    Acción = reproducir playlist MANANA</code></pre>
+    <p><strong>¿Por qué dos eventos y no uno?</strong> Porque el Scheduler ejecuta una acción por evento.
+    Separarlos te permite además cambiar el jingle sin tocar la playlist, y viceversa.</p>
+  </details>
+
+  <h2>Ejercicio 5 · Detecta el error</h2>
+  <div class="box obj">
+    <span class="box-title">Enunciado</span>
+    RadioBOSS muestra <code class="inline">Error 2100</code>. ¿Qué revisas primero y por qué?
+  </div>
+  <details>
+    <summary>Ver solución explicada</summary>
+    <p>La causa habitual del <strong>Error 2100</strong> es <strong>contraseña incorrecta</strong>.</p>
+    <ol>
+      <li>Revisa la contraseña carácter a carácter.</li>
+      <li>Comprueba que no se ha colado un <strong>espacio</strong> al principio o al final al copiar y pegar.</li>
+      <li>Verifica que estás usando la contraseña del <em>encoder</em>, no la del panel de control.</li>
+      <li>Confirma con el proveedor que no la han cambiado.</li>
+    </ol>
+    <p class="small">El espacio invisible al final es, con diferencia, el error más frecuente.</p>
+  </details>
+
+  <h2>Proyecto guiado · De cero a emisora 24/7</h2>
+
+  <div class="box obj">
+    <span class="box-title">Objetivo del proyecto</span>
+    Montar una emisora llamada <strong>Radio Valencia 24</strong> que funcione sola.
+  </div>
+
+  <div class="diagram">06:00 — Despertar Valencia
+09:00 — Música
+12:00 — Noticias
+12:05 — Música
+14:00 — Valencia al día
+16:00 — Música
+20:00 — Especial
+22:00 — Música nocturna
+00:00 — Automática nocturna</div>
+
+  <h3>Fases</h3>
+  <ol>
+    <li>Instalar RadioBOSS.</li>
+    <li>Crear una playlist con 10 canciones.</li>
+    <li>Configurar crossfade y nivelado.</li>
+    <li>Crear un jingle.</li>
+    <li>Crear un evento Scheduler.</li>
+    <li>Contratar una pequeña cuenta de streaming.</li>
+    <li>Configurar un encoder.</li>
+    <li>Conectar.</li>
+    <li>Escuchar desde el móvil.</li>
+    <li>Mostrar Now Playing.</li>
+  </ol>
+
+  <h3>Después</h3>
+  <ol start="11">
+    <li>Crear programación 24/7.</li>
+    <li>Añadir publicidad.</li>
+    <li>Añadir locución.</li>
+    <li>Añadir RadioLogger.</li>
+    <li>Crear página web.</li>
+  </ol>
+
+  <h2>Plan de pruebas antes de poner en producción</h2>
+  <p><strong>Nunca</strong> pongas una radio en producción directamente. Prueba en este orden:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="c">#</th><th>Prueba</th><th>Qué comprueba</th></tr></thead>
+      <tbody>
+        <tr><td class="c">1</td><td>RadioBOSS reproduce música localmente</td><td>Que el audio funciona</td></tr>
+        <tr><td class="c">2</td><td>Playlist automática</td><td>Que la secuencia avanza sola</td></tr>
+        <tr><td class="c">3</td><td>Scheduler</td><td>Que los eventos se disparan a su hora</td></tr>
+        <tr><td class="c">4</td><td>Micrófono</td><td>Que la entrada de voz funciona</td></tr>
+        <tr><td class="c">5</td><td>Encoder</td><td>Que la configuración es válida</td></tr>
+        <tr><td class="c">6</td><td>Conexión al servidor</td><td>Que el servidor acepta el stream</td></tr>
+        <tr><td class="c">7</td><td>Escuchar desde otro dispositivo</td><td>Que hay oyentes reales</td></tr>
+        <tr><td class="c">8</td><td>Now Playing</td><td>Que los metadatos llegan</td></tr>
+        <tr><td class="c">9</td><td>Reiniciar el ordenador</td><td>Que todo vuelve solo</td></tr>
+        <tr><td class="c">10</td><td>Recuperación ante errores</td><td>Que la emisora se recompone</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Checklist de emisora</h2>
+  <p class="small">Marca las casillas. Tu progreso se guarda automáticamente en este navegador.</p>
+  <div class="chk-progress" id="chkProgress">0 / 20 completadas</div>
+
+  <ul class="chk-list" id="chkList">
+    <li><label class="chk"><input type="checkbox" data-ck="ck01"><span>RadioBOSS instalado</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck02"><span>Licencia activada o demo en uso</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck03"><span>Biblioteca musical organizada</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck04"><span>Playlists creadas</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck05"><span>Jingles preparados</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck06"><span>Cuñas preparadas</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck07"><span>Scheduler configurado</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck08"><span>Micrófono probado</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck09"><span>Identidad de estación configurada</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck10"><span>Servidor contratado o instalado</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck11"><span>Servidor, puerto y contraseña comprobados</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck12"><span>Encoder configurado</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck13"><span>Broadcasting activado</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck14"><span>Audio recibido por el servidor</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck15"><span>Un oyente externo puede escuchar</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck16"><span>Metadata funcionando</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck17"><span>Estadísticas comprobadas</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck18"><span>RadioLogger configurado (si se necesita)</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck19"><span>Copias de seguridad configuradas</span></label></li>
+    <li><label class="chk"><input type="checkbox" data-ck="ck20"><span>Funcionamiento 24/7 y reinicio probados</span></label></li>
+  </ul>
+
+</section>
+
+<!-- ============================================================
+     PANEL · ERRORES
+     ============================================================ -->
+<section class="panel" id="p-errores" role="tabpanel" aria-label="Errores">
+
+  <h1>Errores frecuentes y cómo resolverlos</h1>
+  <p class="lead">Cuando algo falla, respira. Casi siempre es una de estas cosas.</p>
+
+  <h2>Error 2100 — Contraseña incorrecta</h2>
+  <div class="box bad">
+    <span class="box-title">Síntoma</span>
+    RadioBOSS no consigue conectar y muestra <code class="inline">Error 2100</code>.
+  </div>
+  <div class="box obj">
+    <span class="box-title">Causa habitual</span>
+    Contraseña incorrecta.
+  </div>
+  <div class="box res">
+    <span class="box-title">Solución</span>
+    <ul>
+      <li>Revisa la contraseña.</li>
+      <li>Revisa el servidor.</li>
+      <li>Revisa la configuración del proveedor.</li>
+      <li>Comprueba que no se ha añadido accidentalmente ningún <strong>espacio</strong>.</li>
+    </ul>
+  </div>
+
+  <h2>Error 2 — Servidor no disponible</h2>
+  <div class="box bad">
+    <span class="box-title">Síntoma</span>
+    Aparece <code class="inline">Error 2</code> al intentar conectar.
+  </div>
+  <div class="box obj">
+    <span class="box-title">Posibles causas</span>
+    <ul>
+      <li>Dirección incorrecta.</li>
+      <li>Puerto incorrecto.</li>
+      <li>Servidor apagado.</li>
+      <li>Firewall bloqueando la conexión.</li>
+      <li>Antivirus bloqueando la conexión.</li>
+      <li>Problema de conexión de red.</li>
+    </ul>
+  </div>
+  <div class="box res">
+    <span class="box-title">Solución</span>
+    La documentación indica que, salvo Windows Media Services, <strong>no debe añadirse <code class="inline">http://</code> ni <code class="inline">ftp://</code></strong>
+    al campo de servidor cuando el formato espera únicamente el nombre o la dirección.
+  </div>
+
+  <h2>Error −1 — Alguien ya está conectado</h2>
+  <div class="box bad">
+    <span class="box-title">Síntoma</span>
+    Aparece <code class="inline">Error -1</code>.
+  </div>
+  <div class="box obj">
+    <span class="box-title">Causa frecuente</span>
+    Ya existe otra conexión usando el mismo servidor/encoder.
+  </div>
+  <div class="box res">
+    <span class="box-title">Solución</span>
+    <ul>
+      <li>Cierra cualquier otra instancia que esté emitiendo.</li>
+      <li>Comprueba en el panel del proveedor si hay una sesión activa colgada.</li>
+      <li>Espera unos minutos y vuelve a intentarlo.</li>
+    </ul>
+  </div>
+
+  <h2>Sin audio en el stream</h2>
+  <div class="box bad">
+    <span class="box-title">Síntoma</span>
+    El encoder conecta correctamente, pero los oyentes no escuchan nada.
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Posible causa</th><th>Cómo comprobarlo</th></tr></thead>
+      <tbody>
+        <tr><td>RadioBOSS no está reproduciendo nada</td><td>Pulsa Play y mira el indicador de nivel</td></tr>
+        <tr><td>La fuente del encoder no es la correcta</td><td>Revisa si es <code class="inline">Audio mix</code> o una entrada concreta</td></tr>
+        <tr><td>Volumen general a cero</td><td>Comprueba el mezclador de Windows</td></tr>
+        <tr><td>Dispositivo de salida incorrecto</td><td>Revisa la tarjeta de sonido seleccionada</td></tr>
+        <tr><td>Un codificador a 0 kbps</td><td>Revisa la configuración del encoder</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Sin metadatos «Now Playing»</h2>
+  <div class="box bad">
+    <span class="box-title">Síntoma</span>
+    El audio llega, pero el reproductor no muestra artista ni título.
+  </div>
+  <div class="box res">
+    <span class="box-title">Qué revisar</span>
+    <ul>
+      <li>Que el envío de metadatos esté activado en la configuración de emisión.</li>
+      <li>Que el servidor acepte metadatos (algunos no lo permiten o lo cobran aparte).</li>
+      <li>Que el modo de actualización sea el adecuado.</li>
+      <li>Que los archivos tengan etiquetas (tags) correctas.</li>
+    </ul>
+  </div>
+
+  <h2>Desconexiones intermitentes</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Posible causa</th><th>Solución</th></tr></thead>
+      <tbody>
+        <tr><td>Internet inestable</td><td>Usar conexión cableada en lugar de WiFi</td></tr>
+        <tr><td>Bitrate superior al permitido por el proveedor</td><td>Ajustar al bitrate contratado</td></tr>
+        <tr><td>Límite de oyentes alcanzado</td><td>Ampliar el plan o reducir el bitrate</td></tr>
+        <tr><td>Firewall o antivirus</td><td>Añadir excepción para RadioBOSS</td></tr>
+        <tr><td>Reconexión automática desactivada</td><td>Activar reconexión en el encoder</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Silencio en la emisión</h2>
+  <div class="box warn">
+    <span class="box-title">El peor problema de una radio automatizada</span>
+    La emisora sigue «emitiendo», pero nadie oye nada. RadioBOSS dispone de funciones de detección de silencio.
+  </div>
+
+  <div class="diagram">Radio funcionando
+       ↓
+¿Hay audio?
+   ┌───┴───┐
+   │       │
+  Sí       No
+   │       │
+   ▼       ▼
+Normal   Recuperación</div>
+
+  <h2>Tabla resumen de diagnóstico rápido</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="c">Error</th><th>Qué significa</th><th>Primera acción</th></tr></thead>
+      <tbody>
+        <tr><td class="c">2100</td><td>Contraseña incorrecta</td><td>Revisar contraseña y espacios</td></tr>
+        <tr><td class="c">2</td><td>Servidor no disponible</td><td>Revisar dirección, puerto y firewall</td></tr>
+        <tr><td class="c">−1</td><td>Ya hay una conexión activa</td><td>Cerrar la otra sesión</td></tr>
+        <tr><td class="c">—</td><td>Sin audio</td><td>Comprobar reproducción y fuente del encoder</td></tr>
+        <tr><td class="c">—</td><td>Sin metadatos</td><td>Activar envío de metadatos</td></tr>
+        <tr><td class="c">—</td><td>Desconexiones</td><td>Revisar bitrate y estabilidad de red</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tip">
+    <span class="box-title">Consejo general</span>
+    Ante cualquier error, aísla la capa: ¿contenido, automatización, codificación, transporte, servidor u oyente?
+    El 90 % de los problemas se localizan así en menos de un minuto.
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANEL · RESUMEN
+     ============================================================ -->
+<section class="panel" id="p-resumen" role="tabpanel" aria-label="Resumen">
+
+  <h1>Resumen final y glosario</h1>
+
+  <h2>El camino fundamental</h2>
+  <div class="diagram">1. Preparar contenido
+        ↓
+2. Instalar RadioBOSS
+        ↓
+3. Crear biblioteca musical
+        ↓
+4. Crear playlists
+        ↓
+5. Configurar Scheduler
+        ↓
+6. Preparar identidad de emisora
+        ↓
+7. Contratar o instalar servidor streaming
+        ↓
+8. Crear encoder
+        ↓
+9. Introducir servidor, puerto y contraseña
+        ↓
+10. Activar broadcasting
+        ↓
+11. Comprobar conexión
+        ↓
+12. Escuchar desde un dispositivo externo
+        ↓
+13. Configurar metadata / Now Playing
+        ↓
+14. Automatizar 24/7
+        ↓
+15. Añadir archivo con RadioLogger si se necesita
+        ↓
+16. Crear web / reproductor
+        ↓
+17. Monitorizar</div>
+
+  <div class="box tip">
+    <span class="box-title">La idea esencial</span>
+    <strong>RadioBOSS decide y produce lo que sale al aire.</strong><br>
+    El <strong>encoder</strong> convierte el audio en un stream.<br>
+    El <strong>servidor</strong> distribuye ese stream.<br>
+    El <strong>reproductor</strong> permite que el oyente lo escuche.
+  </div>
+
+  <h2>Arquitectura final del proyecto</h2>
+  <div class="diagram">                         RADIO
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+       Música           Locución         Publicidad
+          │                │                │
+          └────────────────┼────────────────┘
+                           ▼
+                      RADIOBOSS
+                           │
+            ┌──────────────┼──────────────┐
+            │              │              │
+        Scheduler      Playlists       Metadata
+            │              │              │
+            └──────────────┼──────────────┘
+                           ▼
+                      ENCODER
+                           │
+                           ▼
+                  SERVIDOR STREAMING
+                           │
+                    ┌──────┴──────┐
+                    │             │
+                   WEB          APP/MÓVIL
+                    │             │
+                    └──────┬──────┘
+                           ▼
+                        OYENTES</div>
+
+  <h2>Glosario</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Término</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Encoder</strong></td><td>Componente que convierte el audio en un stream codificado.</td></tr>
+        <tr><td><strong>Bitrate</strong></td><td>Cantidad de datos por segundo del stream (kbps). Más bitrate = más calidad y más ancho de banda.</td></tr>
+        <tr><td><strong>Stream</strong></td><td>Flujo continuo de audio que se reproduce sin descargarse por completo.</td></tr>
+        <tr><td><strong>Icecast</strong></td><td>Servidor de streaming libre y muy extendido.</td></tr>
+        <tr><td><strong>Shoutcast</strong></td><td>Otro sistema de distribución de streaming compatible con RadioBOSS.</td></tr>
+        <tr><td><strong>Mount point</strong></td><td>Ruta dentro del servidor que identifica un stream concreto.</td></tr>
+        <tr><td><strong>Scheduler</strong></td><td>Sistema de eventos programados de RadioBOSS.</td></tr>
+        <tr><td><strong>Playlist</strong></td><td>Secuencia ordenada de contenidos.</td></tr>
+        <tr><td><strong>Crossfade</strong></td><td>Transición suave entre dos pistas que se solapan.</td></tr>
+        <tr><td><strong>Nivelado</strong></td><td>Ajuste automático de volumen para homogeneizar la emisión.</td></tr>
+        <tr><td><strong>Dayparting</strong></td><td>Programación por franjas horarias.</td></tr>
+        <tr><td><strong>Now Playing</strong></td><td>Metadatos que indican qué suena en este momento.</td></tr>
+        <tr><td><strong>AutoDJ</strong></td><td>Modo en el que el servidor reproduce contenido por sí mismo.</td></tr>
+        <tr><td><strong>Relay</strong></td><td>Retransmisión de un stream desde otro servidor.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Preguntas frecuentes</h2>
+
+  <details>
+    <summary>¿Necesito contratar hosting o puedo emitir desde mi casa?</summary>
+    <p>Puedes empezar desde casa para aprender. Pero si quieres oyentes reales y estabilidad, necesitas un servidor
+    porque tu conexión doméstica no está pensada para repartir audio a muchas personas a la vez.</p>
+  </details>
+
+  <details>
+    <summary>¿RadioBOSS sirve para emitir en directo con locutor?</summary>
+    <p>Sí. Puede trabajar con micrófono y entradas de línea, y combinarlos con música, cuñas y jingles.</p>
+  </details>
+
+  <details>
+    <summary>¿Puedo emitir en varios bitrates a la vez?</summary>
+    <p>Sí. RadioBOSS permite múltiples codificadores simultáneos, cada uno con su propia configuración y destino.</p>
+  </details>
+
+  <details>
+    <summary>¿Qué pasa si se cae Internet a mitad de emisión?</summary>
+    <p>Si tienes activada la reconexión automática, RadioBOSS volverá a conectar cuando la conexión se recupere.
+    Mientras tanto, los oyentes perderán el stream.</p>
+  </details>
+
+  <details>
+    <summary>¿Puedo emitir música comercial sin más?</summary>
+    <p><strong>No necesariamente.</strong> Que sea técnicamente posible no significa que sea legal.
+    Debes analizar derechos de autor, derechos de artistas, productores, licencias de comunicación pública
+    y la legislación aplicable en tu territorio. RadioBOSS no te concede esos derechos.</p>
+  </details>
+
+  <details>
+    <summary>¿La licencia de RadioBOSS caduca?</summary>
+    <p>No. La licencia es perpetua. Lo que caduca es el periodo de actualizaciones y soporte (un año), que puedes renovar opcionalmente.</p>
+  </details>
+
+  <details>
+    <summary>¿RadioCaster sustituye a RadioBOSS?</summary>
+    <p>No. RadioCaster solo codifica audio que le llega. No automatiza, no programa playlists ni gestiona una emisora completa.</p>
+  </details>
+
+  <details>
+    <summary>¿Cuánto cuesta montar una radio pequeña?</summary>
+    <p>Depende. Como mínimo: el software, el hosting de streaming, un dominio y la conexión a Internet.
+    A eso se suman electricidad, hardware, micrófono y, si emites música comercial, las licencias correspondientes.</p>
+  </details>
+
+  <h2>Comparativa rápida: software vs servicio</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Elemento</th><th>Qué es</th><th>Quién lo aporta</th></tr></thead>
+      <tbody>
+        <tr><td>RadioBOSS</td><td>Software de automatización y emisión</td><td>DJSoft</td></tr>
+        <tr><td>Servidor de streaming</td><td>Infraestructura de distribución</td><td>Un proveedor o tú mismo</td></tr>
+        <tr><td>Internet</td><td>Transporte de datos</td><td>Tu operadora</td></tr>
+        <tr><td>Web</td><td>Interfaz para el oyente</td><td>Tú</td></tr>
+        <tr><td>Derechos musicales</td><td>Cuestión legal independiente</td><td>Entidades de gestión</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Principio didáctico</h2>
+  <div class="box obj">
+    <span class="box-title">Antes de cada acción, pregúntate</span>
+    <ol>
+      <li>¿Qué estoy haciendo?</li>
+      <li>¿Por qué lo hago?</li>
+      <li>¿Qué componente estoy configurando?</li>
+      <li>¿Qué resultado debería obtener?</li>
+    </ol>
+    Si puedes responder a las cuatro, no estás copiando pasos: estás entendiendo un sistema.
+  </div>
+
+</section>
+
+<!-- ============================================================
+     PANEL · FUENTES
+     ============================================================ -->
+<section class="panel" id="p-fuentes" role="tabpanel" aria-label="Fuentes">
+
+  <h1>Fuentes oficiales y datos de referencia</h1>
+
+  <h2>Enlaces oficiales de DJSoft</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Recurso</th><th>Dirección</th></tr></thead>
+      <tbody>
+        <tr><td>DJSoft (inicio)</td><td><a href="https://www.djsoft.net/es/index.htm" target="_blank" rel="noopener">https://www.djsoft.net/es/index.htm</a></td></tr>
+        <tr><td>Descargas</td><td><a href="https://www.djsoft.net/es/download.htm" target="_blank" rel="noopener">https://www.djsoft.net/es/download.htm</a></td></tr>
+        <tr><td>Compra</td><td><a href="https://www.djsoft.net/es/buy.htm" target="_blank" rel="noopener">https://www.djsoft.net/es/buy.htm</a></td></tr>
+        <tr><td>Ediciones de RadioBOSS</td><td><a href="https://www.djsoft.net/es/radioboss_editions.htm" target="_blank" rel="noopener">https://www.djsoft.net/es/radioboss_editions.htm</a></td></tr>
+        <tr><td>Actualizaciones y soporte</td><td><a href="https://www.djsoft.net/es/subscription.htm" target="_blank" rel="noopener">https://www.djsoft.net/es/subscription.htm</a></td></tr>
+        <tr><td>Asistencia</td><td><a href="https://www.djsoft.net/es/support.htm" target="_blank" rel="noopener">https://www.djsoft.net/es/support.htm</a></td></tr>
+        <tr><td>Manual de RadioBOSS</td><td><a href="https://manual.djsoft.net/radioboss/en/" target="_blank" rel="noopener">https://manual.djsoft.net/radioboss/en/</a></td></tr>
+        <tr><td>Streaming de Internet con RadioBOSS</td><td><a href="https://manual.djsoft.net/radioboss/en/broadcasting_internet_radio.htm" target="_blank" rel="noopener">https://manual.djsoft.net/radioboss/en/broadcasting_internet_radio.htm</a></td></tr>
+        <tr><td>Scheduler</td><td><a href="https://manual.djsoft.net/radioboss/en/schedule.htm" target="_blank" rel="noopener">https://manual.djsoft.net/radioboss/en/schedule.htm</a></td></tr>
+        <tr><td>Programación de reproducción</td><td><a href="https://manual.djsoft.net/radioboss/en/scheduling_playback.htm" target="_blank" rel="noopener">https://manual.djsoft.net/radioboss/en/scheduling_playback.htm</a></td></tr>
+        <tr><td>RadioBOSS.FM</td><td><a href="https://www.radioboss.fm/" target="_blank" rel="noopener">https://www.radioboss.fm/</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Datos de referencia</h2>
+  <p class="small">Según la información disponible en DJSoft al preparar este tutorial. Estos datos pueden cambiar.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Elemento</th><th>Valor de referencia</th></tr></thead>
+      <tbody>
+        <tr><td>RadioBOSS</td><td>versión 7.2.4</td></tr>
+        <tr><td>RadioLogger</td><td>versión 4.1.6</td></tr>
+        <tr><td>RadioCaster</td><td>versión 3.7.4</td></tr>
+        <tr><td>RadioBOSS Standard</td><td>€179</td></tr>
+        <tr><td>RadioBOSS Advanced</td><td>€229</td></tr>
+        <tr><td>RadioBOSS Ultimate</td><td>€279</td></tr>
+        <tr><td>RadioLogger</td><td>€55</td></tr>
+        <tr><td>RadioCaster</td><td>€65</td></tr>
+        <tr><td>RadioBOSS.FM</td><td>hosting anunciado desde $12/mes</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <span class="box-title">Verifica antes de comprar</span>
+    Los precios, versiones y condiciones cambian. Consulta siempre la página oficial de DJSoft en el momento de la compra.
+  </div>
+
+  <h2>Estructura del tutorial</h2>
+  <div class="diagram">INICIO
+│
+├── ¿Qué vamos a construir?
+├── Arquitectura de una radio
+└── RadioBOSS explicado visualmente
+
+CONCEPTOS
+│
+├── Los cuatro elementos
+├── Los tres productos de DJSoft
+├── Capas del sistema
+└── Software vs servicio
+
+RADIOBOSS
+│
+├── Qué es
+├── Ediciones
+├── Licencia
+├── Instalación
+├── Biblioteca
+├── Playlists
+├── Scheduler
+├── Crossfade
+├── Nivelado
+└── Micrófono
+
+STREAMING
+│
+├── Qué es un stream
+├── Encoder
+├── Bitrate
+├── Ancho de banda
+├── Metadata / Now Playing
+└── Icecast vs Shoutcast
+
+PROCEDIMIENTO
+│
+├── 12 bloques paso a paso
+└── Resultados esperados
+
+PRÁCTICA
+│
+├── 5 ejercicios resueltos
+├── Proyecto guiado
+└── Checklist
+
+ERRORES
+│
+├── Error 2100
+├── Error 2
+├── Error −1
+├── Sin audio
+├── Sin metadata
+└── Desconexiones
+
+RESUMEN
+│
+├── Camino fundamental
+├── Glosario
+└── Preguntas frecuentes
+
+FUENTES
+│
+└── Enlaces y datos de referencia</div>
+
+</section>
+
+<!-- ============================================================
+     PANEL · CRÉDITOS
+     ============================================================ -->
+<section class="panel" id="p-creditos" role="tabpanel" aria-label="Créditos">
+
+  <h1>Créditos</h1>
+
+  <div class="hero-svg-mount" data-svg-hero="true" role="img"
+       aria-label="Diagrama animado: RadioBOSS reproduce y automatiza el audio, el encoder lo convierte en un stream y el servidor lo distribuye por Internet a los oyentes."></div>
+  <p class="hero-caption">El mismo dibujo que abre el tutorial: RadioBOSS produce, el encoder convierte, el servidor distribuye.</p>
+
+  <div class="author-card">
+    <p class="author-name">Rubén Sbarsky</p>
+    <p class="author-role">Autor del tutorial</p>
+    <p class="meta-line">
+      Fecha y hora de creación: <strong>04/10/2026 — 18:42:07</strong>
+    </p>
+    <p class="meta-line">
+      Basado en la documentación y la información pública de <strong>DJSoft.Net</strong> sobre
+      RadioBOSS, RadioCaster y RadioLogger.
+    </p>
+    <span class="version-badge">VERSIÓN V001</span>
+  </div>
+
+  <h2>Sobre este tutorial</h2>
+  <div class="card">
+    <p>
+      Este tutorial transforma el material base sobre <strong>DJSoft / RadioBOSS</strong> en una guía interactiva
+      pensada para aprender desde cero: qué es una radio streaming, qué hace cada componente y cómo montarla paso a paso.
+    </p>
+    <p>
+      El enfoque es deliberadamente pedagógico: primero el <em>qué</em> y el <em>por qué</em>, después el <em>cómo</em>.
+      Cada procedimiento incluye objetivo, explicación, pasos, resultado esperado y qué hacer si algo falla.
+    </p>
+  </div>
+
+  <h2>Contenido del tutorial</h2>
+  <div class="grid two">
+    <div class="card tight">
+      <h4>Conceptos y arquitectura</h4>
+      <ul>
+        <li>Los cuatro elementos de una radio</li>
+        <li>RadioBOSS, RadioCaster y RadioLogger</li>
+        <li>Capas del sistema</li>
+        <li>Software vs servicio vs derechos</li>
+      </ul>
+    </div>
+    <div class="card tight">
+      <h4>Configuración práctica</h4>
+      <ul>
+        <li>Instalación y biblioteca musical</li>
+        <li>Playlists y Scheduler</li>
+        <li>Encoder y servidor de streaming</li>
+        <li>Metadatos y automatización 24/7</li>
+      </ul>
+    </div>
+    <div class="card tight">
+      <h4>Resolución de problemas</h4>
+      <ul>
+        <li>Error 2100</li>
+        <li>Error 2</li>
+        <li>Error −1</li>
+        <li>Sin audio, sin metadatos, desconexiones</li>
+      </ul>
+    </div>
+    <div class="card tight">
+      <h4>Recursos</h4>
+      <ul>
+        <li>5 ejercicios resueltos</li>
+        <li>Proyecto guiado por fases</li>
+        <li>Checklist de emisora</li>
+        <li>Glosario y FAQ</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Aviso legal</h2>
+  <div class="box warn">
+    <span class="box-title">Importante</span>
+    Este tutorial tiene finalidad exclusivamente educativa. No está afiliado ni patrocinado por DJSoft.Net.
+    RadioBOSS, RadioCaster y RadioLogger son productos de DJSoft.Net. Los nombres, precios y versiones citados
+    pertenecen a sus respectivos propietarios y pueden cambiar sin previo aviso.
+    <br><br>
+    Emitir música comercial requiere las licencias correspondientes. El software no sustituye a esas licencias.
+  </div>
+
+  <h2>Novedades de esta versión</h2>
+  <div class="card">
+    <ul>
+      <li>Versión inicial del tutorial interactivo (V001).</li>
+      <li>SVG animado único compartido entre INICIO y CRÉDITOS.</li>
+      <li>10 pestañas de contenido con navegación real.</li>
+      <li>Buscador interno con resaltado de coincidencias.</li>
+      <li>Control de tamaño de texto, modo claro/oscuro y guardado como PDF.</li>
+      <li>Checklist de emisora con progreso guardado en el navegador.</li>
+    </ul>
+  </div>
+
+  <p class="center small" style="margin-top:26px">
+    Tutorial creado por <strong>Rubén Sbarsky</strong> · Versión V001 · 04/10/2026 — 18:42:07
+  </p>
+
+</section>
+
+</main>
+
+<!-- Botón volver arriba -->
+<button class="to-top" id="toTop" type="button" aria-label="Volver arriba">↑</button>
+
+<!-- Aviso flotante -->
+<div class="notice" id="notice" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     UTILIDADES
+     ============================================================ */
+  var LS = {
+    get: function (k, d) {
+      try {
+        var v = localStorage.getItem(k);
+        return v === null ? d : JSON.parse(v);
+      } catch (e) { return d; }
+    },
+    set: function (k, v) {
+      try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+    }
+  };
+
+  var K_THEME = 'rbtut_v1_theme';
+  var K_FONT  = 'rbtut_v1_font';
+  var K_CHK   = 'rbtut_v1_checks';
+
+  var noticeEl = document.getElementById('notice');
+  var noticeTimer = null;
+  function showNotice(msg) {
+    if (!noticeEl) return;
+    noticeEl.textContent = msg;
+    noticeEl.classList.add('show');
+    if (noticeTimer) clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(function () {
+      noticeEl.classList.remove('show');
+    }, 7000);
+  }
+
+  /* ============================================================
+     SVG ANIMADO — PLANTILLA ÚNICA + MONTAJE CON innerHTML
+     ============================================================ */
+  var seq = 0;
+  var TPL = null;
+  var imgMode = false;
+
+  function template() {
+    if (TPL) return TPL;
+    var src = document.getElementById('svgHeroSource');
+    if (!src) { TPL = { defs: '', art: '' }; return TPL; }
+    var defsNode = src.querySelector('defs');
+    var artNode = src.querySelector('#svgHero');
+    if (!defsNode || !artNode) { TPL = { defs: '', art: '' }; return TPL; }
+
+    var d = defsNode.cloneNode(true);
+    var g = artNode.cloneNode(true);
+    var inner = d.querySelector('#svgHero');
+    if (inner && inner.parentNode) inner.parentNode.removeChild(inner);
+    g.removeAttribute('id');
+
+    TPL = { defs: d.innerHTML, art: g.outerHTML };
+
+    /* Eliminar el SVG fuente para que no siga animándose oculto */
+    if (src.parentNode) src.parentNode.removeChild(src);
+    return TPL;
+  }
+
+  function markup(uid) {
+    var t = template();
+    var s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 260" '
+          + 'preserveAspectRatio="xMidYMid meet" '
+          + 'style="display:block;width:100%;height:auto" aria-hidden="true">'
+          + '<defs>' + t.defs + '</defs>' + t.art + '</svg>';
+
+    ['gBg', 'gAcc', 'fGlow'].forEach(function (id) {
+      s = s.split('id="' + id + '"').join('id="' + id + '-' + uid + '"')
+           .split('url(#' + id + ')').join('url(#' + id + '-' + uid + ')');
+    });
+    return s;
+  }
+
+  function mountOne(m) {
+    if (!m) return;
+    m.textContent = '';
+
+    if (imgMode) {
+      var im = new Image();
+      im.alt = '';
+      im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup('i' + (++seq)));
+      m.appendChild(im);
+      return;
+    }
+
+    m.innerHTML = markup('h' + (++seq));
+    var svg = m.querySelector('svg');
+    if (!svg) return;
+
+    var t0 = 0;
+    try {
+      svg.setCurrentTime(0);
+      svg.unpauseAnimations();
+      t0 = svg.getCurrentTime();
+    } catch (e) { t0 = 0; }
+
+    /* Plan B: si el reloj SMIL no avanza y el SVG es visible, usar <img> */
+    setTimeout(function () {
+      if (document.hidden) return;
+      if (!m.isConnected) return;
+      if (m.querySelector('svg') !== svg) return;
+      var h = 0, t1 = t0;
+      try { h = svg.getBoundingClientRect().height; } catch (e) {}
+      try { t1 = svg.getCurrentTime(); } catch (e) {}
+      if (h > 0 && (t1 - t0) < 0.3) {
+        imgMode = true;
+        mountOne(m);
+      }
+    }, 1600);
+  }
+
+  function mountActive() {
+    var list = document.querySelectorAll('.panel.active [data-svg-hero]');
+    for (var i = 0; i < list.length; i++) mountOne(list[i]);
+  }
+
+  function ensureAll() {
+    var list = document.querySelectorAll('[data-svg-hero]');
+    for (var i = 0; i < list.length; i++) {
+      if (!list[i].firstElementChild) mountOne(list[i]);
+    }
+  }
+
+  function freezeAll() {
+    ensureAll();
+    var svgs = document.querySelectorAll('[data-svg-hero] svg');
+    for (var i = 0; i < svgs.length; i++) {
+      try {
+        svgs[i].pauseAnimations();
+        svgs[i].setCurrentTime(1.1);
+      } catch (e) {}
+    }
+  }
+
+  function resumeAll() {
+    var svgs = document.querySelectorAll('[data-svg-hero] svg');
+    for (var i = 0; i < svgs.length; i++) {
+      try { svgs[i].unpauseAnimations(); } catch (e) {}
+    }
+  }
+
+  /* Red de seguridad: si el panel activo tiene su contenedor vacío, remontar */
+  setInterval(function () {
+    if (document.hidden) return;
+    var list = document.querySelectorAll('.panel.active [data-svg-hero]');
+    for (var i = 0; i < list.length; i++) {
+      if (!list[i].firstElementChild) mountOne(list[i]);
+    }
+  }, 800);
+
+  /* ============================================================
+     PESTAÑAS
+     ============================================================ */
+  var TABS = ['inicio', 'conceptos', 'radioboss', 'streaming', 'procedimiento',
+              'practica', 'errores', 'resumen', 'fuentes', 'creditos'];
+
+  var currentTab = 'inicio';
+
+  function activateTab(id, opts) {
+    opts = opts || {};
+    if (TABS.indexOf(id) === -1) id = 'inicio';
+    currentTab = id;
+
+    var panels = document.querySelectorAll('.panel');
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].classList.toggle('active', panels[i].id === 'p-' + id);
+    }
+
+    var tabs = document.querySelectorAll('.tab');
+    for (var j = 0; j < tabs.length; j++) {
+      var on = tabs[j].getAttribute('data-tab') === id;
+      tabs[j].classList.toggle('active', on);
+      tabs[j].setAttribute('aria-selected', on ? 'true' : 'false');
+      if (on && tabs[j].scrollIntoView) {
+        try {
+          tabs[j].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        } catch (e) {}
+      }
+    }
+
+    mountActive();
+
+    if (opts.hash !== false) {
+      try { history.replaceState(null, '', '#p-' + id); } catch (e) {}
+    }
+    if (opts.scroll !== false) {
+      try { window.scrollTo(0, 0); } catch (e) { window.scrollTo(0, 0); }
+    }
+    updateProgress();
+  }
+
+  var tabsInner = document.getElementById('tabsInner');
+  if (tabsInner) {
+    tabsInner.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('.tab') : null;
+      if (!btn) return;
+      activateTab(btn.getAttribute('data-tab'));
+    });
+  }
+
+  /* Enlaces internos (si los hubiera) */
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest ? ev.target.closest('a[href^="#p-"]') : null;
+    if (!a) return;
+    ev.preventDefault();
+    activateTab(a.getAttribute('href').replace('#p-', ''));
+  });
+
+  /* ============================================================
+     BARRA DE PROGRESO + VOLVER ARRIBA
+     ============================================================ */
+  var fill = document.getElementById('progressFill');
+  var toTop = document.getElementById('toTop');
+
+  function updateProgress() {
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - doc.clientHeight;
+    var p = max > 0 ? (doc.scrollTop / max) * 100 : 0;
+    if (p < 0) p = 0;
+    if (p > 100) p = 100;
+    if (fill) fill.style.width = p + '%';
+    if (toTop) toTop.classList.toggle('show', doc.scrollTop > 420);
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress);
+
+  if (toTop) {
+    toTop.addEventListener('click', function () {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      catch (e) { window.scrollTo(0, 0); }
+    });
+  }
+
+  /* ============================================================
+     TEMA CLARO / OSCURO
+     ============================================================ */
+  var themeBtn = document.getElementById('themeBtn');
+
+  function applyTheme(mode) {
+    var light = (mode === 'light');
+    document.body.classList.toggle('light', light);
+    if (themeBtn) themeBtn.textContent = light ? '🌙 Oscuro' : '☀️ Claro';
+  }
+
+  var savedTheme = LS.get(K_THEME, 'dark');
+  applyTheme(savedTheme);
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var now = document.body.classList.contains('light') ? 'dark' : 'light';
+      applyTheme(now);
+      LS.set(K_THEME, now);
+    });
+  }
+
+  /* ============================================================
+     TAMAÑO DE TEXTO
+     ============================================================ */
+  var FONTS = [13, 14, 15, 16, 17, 18, 20];
+  var fontIdx = LS.get(K_FONT, 3);
+  if (typeof fontIdx !== 'number' || fontIdx < 0 || fontIdx >= FONTS.length) fontIdx = 3;
+
+  function applyFont() {
+    document.documentElement.style.fontSize = FONTS[fontIdx] + 'px';
+  }
+  applyFont();
+
+  var fontDown = document.getElementById('fontDown');
+  var fontUp = document.getElementById('fontUp');
+
+  if (fontDown) {
+    fontDown.addEventListener('click', function () {
+      if (fontIdx > 0) { fontIdx--; applyFont(); LS.set(K_FONT, fontIdx); }
+    });
+  }
+  if (fontUp) {
+    fontUp.addEventListener('click', function () {
+      if (fontIdx < FONTS.length - 1) { fontIdx++; applyFont(); LS.set(K_FONT, fontIdx); }
+    });
+  }
+
+  /* ============================================================
+     IMPRIMIR / PDF
+     ============================================================ */
+  var printClosed = [];
+
+  function beforePrint() {
+    printClosed = [];
+    var ds = document.querySelectorAll('details:not([open])');
+    for (var i = 0; i < ds.length; i++) {
+      printClosed.push(ds[i]);
+      ds[i].open = true;
+    }
+    freezeAll();
+  }
+
+  function afterPrint() {
+    for (var i = 0; i < printClosed.length; i++) {
+      printClosed[i].open = false;
+    }
+    printClosed = [];
+    resumeAll();
+  }
+
+  window.addEventListener('beforeprint', beforePrint);
+  window.addEventListener('afterprint', afterPrint);
+
+  var printBtn = document.getElementById('printBtn');
+  if (printBtn) {
+    printBtn.addEventListener('click', function () {
+      var inIframe = false;
+      try { inIframe = (window.self !== window.top); } catch (e) { inIframe = true; }
+
+      beforePrint();
+
+      try { window.print(); } catch (e) {}
+
+      if (inIframe) {
+        showNotice('Si no se abre el diálogo de impresión, abre este archivo directamente en el navegador (no dentro de un visor) y pulsa Ctrl+P / Cmd+P.');
+      }
+
+      setTimeout(afterPrint, 1400);
+    });
+  }
+
+  /* Aviso si estamos dentro de un iframe con sandbox */
+  (function () {
+    var inIframe = false;
+    try { inIframe = (window.self !== window.top); } catch (e) { inIframe = true; }
+    if (inIframe) {
+      setTimeout(function () {
+        showNotice('Estás viendo este tutorial dentro de un visor. Para imprimir o guardar como PDF, ábrelo directamente en el navegador.');
+      }, 2500);
+    }
+  })();
+
+  /* ============================================================
+     BOTONES COPIAR
+     ============================================================ */
+  function copyText(txt, btn) {
+    function done() {
+      if (!btn) return;
+      var old = btn.textContent;
+      btn.textContent = '¡COPIADO!';
+      btn.classList.add('done');
+      setTimeout(function () {
+        btn.textContent = old;
+        btn.classList.remove('done');
+      }, 1400);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () { fallback(); });
+    } else {
+      fallback();
+    }
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+      } catch (e) {
+        showNotice('No se pudo copiar automáticamente. Selecciona el texto y cópialo a mano.');
+      }
+    }
+  }
+
+  var copyBtns = document.querySelectorAll('.copyBtn');
+  for (var ci = 0; ci < copyBtns.length; ci++) {
+    (function (btn) {
+      btn.addEventListener('click', function () {
+        var wrap = btn.parentNode;
+        var pre = wrap ? wrap.querySelector('pre') : null;
+        var txt = pre ? (pre.innerText || pre.textContent || '') : (btn.getAttribute('data-copy') || '');
+        copyText(txt, btn);
+      });
+    })(copyBtns[ci]);
+  }
+
+  /* ============================================================
+     CHECKLIST CON PROGRESO
+     ============================================================ */
+  var chkList = document.getElementById('chkList');
+  var chkProgress = document.getElementById('chkProgress');
+
+  function saveChecks() {
+    if (!chkList) return;
+    var state = {};
+    var boxes = chkList.querySelectorAll('input[type="checkbox"]');
+    for (var i = 0; i < boxes.length; i++) {
+      state[boxes[i].getAttribute('data-ck')] = boxes[i].checked;
+    }
+    LS.set(K_CHK, state);
+    updateChkProgress();
+  }
+
+  function updateChkProgress() {
+    if (!chkList || !chkProgress) return;
+    var boxes = chkList.querySelectorAll('input[type="checkbox"]');
+    var done = 0;
+    for (var i = 0; i < boxes.length; i++) if (boxes[i].checked) done++;
+    chkProgress.textContent = done + ' / ' + boxes.length + ' completadas';
+    chkProgress.style.color = (done === boxes.length && boxes.length > 0) ? 'var(--ok)' : 'var(--muted)';
+  }
+
+  if (chkList) {
+    var saved = LS.get(K_CHK, {});
+    var boxes = chkList.querySelectorAll('input[type="checkbox"]');
+    for (var k = 0; k < boxes.length; k++) {
+      var key = boxes[k].getAttribute('data-ck');
+      if (saved && saved[key]) boxes[k].checked = true;
+      boxes[k].addEventListener('change', saveChecks);
+    }
+    updateChkProgress();
+  }
+
+  /* ============================================================
+     BUSCADOR
+     ============================================================ */
+  var searchInput = document.getElementById('searchInput');
+  var searchCount = document.getElementById('searchCount');
+  var searchTimer = null;
+
+  function clearHighlights() {
+    var marks = document.querySelectorAll('mark.search-hl');
+    for (var i = 0; i < marks.length; i++) {
+      var m = marks[i];
+      var p = m.parentNode;
+      if (!p) continue;
+      p.replaceChild(document.createTextNode(m.textContent), m);
+      p.normalize();
+    }
+  }
+
+  function doSearch(q) {
+    clearHighlights();
+    if (!q || q.length < 2) {
+      if (searchCount) searchCount.textContent = '';
+      return;
+    }
+
+    var ql = q.toLowerCase();
+    var count = 0;
+    var firstPanel = null;
+
+    var panels = document.querySelectorAll('.panel');
+    for (var pi = 0; pi < panels.length; pi++) {
+      var panel = panels[pi];
+      if (!document.createTreeWalker) break;
+
+      var walker = document.createTreeWalker(
+        panel,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: function (n) {
+            if (!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+            var par = n.parentNode;
+            if (!par) return NodeFilter.FILTER_REJECT;
+            var tag = par.nodeName;
+            if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'MARK') return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        },
+        false
+      );
+
+      var nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+
+      for (var ni = 0; ni < nodes.length; ni++) {
+        var node = nodes[ni];
+        var text = node.nodeValue;
+        var lower = text.toLowerCase();
+        var idx = lower.indexOf(ql);
+        if (idx === -1) continue;
+
+        var frag = document.createDocumentFragment();
+        var pos = 0;
+        while (idx !== -1) {
+          if (idx > pos) frag.appendChild(document.createTextNode(text.slice(pos, idx)));
+          var mk = document.createElement('mark');
+          mk.className = 'search-hl';
+          mk.textContent = text.slice(idx, idx + q.length);
+          frag.appendChild(mk);
+          count++;
+          pos = idx + q.length;
+          idx = lower.indexOf(ql, pos);
+        }
+        if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+        if (node.parentNode) node.parentNode.replaceChild(frag, node);
+        if (!firstPanel) firstPanel = panel;
+      }
+    }
+
+    if (searchCount) {
+      searchCount.textContent = count > 0 ? (count + ' coincidencia' + (count === 1 ? '' : 's')) : 'sin resultados';
+    }
+
+    if (count > 0 && firstPanel) {
+      var panelId = firstPanel.id.replace('p-', '');
+      if (panelId !== currentTab) {
+        activateTab(panelId, { scroll: false });
+      }
+      var firstMark = firstPanel.querySelector('mark.search-hl');
+      if (firstMark && firstMark.scrollIntoView) {
+        setTimeout(function () {
+          try { firstMark.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+          catch (e) {}
+        }, 120);
+      }
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      var val = searchInput.value.trim();
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { doSearch(val); }, 240);
+    });
+    searchInput.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') {
+        searchInput.value = '';
+        clearHighlights();
+        if (searchCount) searchCount.textContent = '';
+      }
+    });
+  }
+
+  /* ============================================================
+     INICIALIZACIÓN
+     ============================================================ */
+  function init() {
+    var initial = 'inicio';
+    try {
+      var h = (location.hash || '').replace('#p-', '');
+      if (TABS.indexOf(h) !== -1) initial = h;
+    } catch (e) {}
+
+    activateTab(initial, { hash: false, scroll: false });
+
+    /* Montaje inicial garantizado */
+    mountActive();
+    setTimeout(mountActive, 60);
+    setTimeout(function () {
+      if (initial !== 'creditos') ensureAllSilently();
+    }, 900);
+
+    updateProgress();
+  }
+
+  function ensureAllSilently() {
+    /* Monta también el SVG de CRÉDITOS aunque no se haya visitado,
+       para que esté listo si el usuario pulsa imprimir inmediatamente. */
+    var list = document.querySelectorAll('[data-svg-hero]');
+    for (var i = 0; i < list.length; i++) {
+      if (!list[i].firstElementChild) {
+        var panel = list[i].closest ? list[i].closest('.panel') : null;
+        if (panel && panel.classList.contains('active')) continue;
+        mountOne(list[i]);
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  /* Exponer utilidades mínimas por si fueran necesarias */
+  window.__rbTutorial = {
+    activateTab: activateTab,
+    mountActive: mountActive,
+    freezeAll: freezeAll,
+    resumeAll: resumeAll
+  };
+
+})();
+</script>
+</body>
+</html>
